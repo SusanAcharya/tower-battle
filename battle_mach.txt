@@ -1,0 +1,17 @@
+when a player is close to an npc and reveals it, they also see "E" hovering above that NPC . 
+
+When the user presses "E" key, then a battle screen will load. Here the player is on the left hand side while the npc is on  the right hand side. 
+
+then the player has a HUD in the bottom which displays their hp(default 100) , npc hp (default 100), dices available.
+
+so the player has infinite attack and heal dice. and they will have 1 of chaos dice and a random event dice. 
+
+the player has to choose any of the dices and click roll. attack and heal dices will roll two dices, and the dmg done or heal taken will be the sum of two dices.
+
+for the chaos dice, it only rolls 1 dice. and each dice face will determine either a buff for the player , debuff for the player, debuff for the opponent, buff for the opponent, nothing and skip next turn.
+
+for the random event dice, it also rolls 1 dice. and each dice will will determine a random event. it can be metero falls and both get x damage reduced, hp will be swapped, poison effect so both lose 5 hp each turn, next turn both can roll 3 dices when attacking / healing. both hp reduced by 25% , both healed to full hp.
+
+it starts with player turn and once they do and roll, the opponent will do their turn as well (design mechanic for npc).
+
+back in the platform/floor screen, if the player decides not to press "E" and interact and move away, the npc will go back to Silhouette. Silhouette effect will be removed once you battle and win that NPC.

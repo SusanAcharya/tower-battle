@@ -1,0 +1,5 @@
+I want you to build a website which is a game. 
+
+The game is a platformer game where you start at floor 0. and then you can move using WASD or arrow keys and space bar to jump. There are 10 floors.
+
+Similar to Games like: Donkey Kong & Icy Tower
