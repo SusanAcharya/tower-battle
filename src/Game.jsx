@@ -11,6 +11,59 @@ const MOVE_SPEED = 5
 const FLOOR_HEIGHT = 80
 const PLATFORM_HEIGHT = 20
 
+// Dice Slot Machine Component
+const DiceSlotMachine = ({ finalValue, type, delay = 0 }) => {
+  const [displayValue, setDisplayValue] = useState(1)
+  const [isSpinning, setIsSpinning] = useState(true)
+  
+  useEffect(() => {
+    let interval
+    let timeout
+    
+    // Start spinning after delay
+    const startTimeout = setTimeout(() => {
+      setIsSpinning(true)
+      
+      // Rapid spinning for 0.7 seconds
+      interval = setInterval(() => {
+        setDisplayValue(Math.floor(Math.random() * 6) + 1)
+      }, 50)
+      
+      // Slow down and stop at final value
+      timeout = setTimeout(() => {
+        clearInterval(interval)
+        
+        // Slower spinning for last 0.3 seconds
+        let count = 0
+        const slowInterval = setInterval(() => {
+          setDisplayValue(Math.floor(Math.random() * 6) + 1)
+          count++
+          if (count >= 3) {
+            clearInterval(slowInterval)
+            setDisplayValue(finalValue)
+            setIsSpinning(false)
+          }
+        }, 100)
+      }, 700)
+    }, delay)
+    
+    return () => {
+      clearTimeout(startTimeout)
+      clearTimeout(timeout)
+      clearInterval(interval)
+    }
+  }, [finalValue, delay])
+  
+  return (
+    <div className={`dice-roll-slot ${type} ${isSpinning ? 'spinning' : 'stopped'}`}>
+      <div className="dice-glow" />
+      <div className="dice-number-display">
+        {displayValue}
+      </div>
+    </div>
+  )
+}
+
 const Game = () => {
   // Start player at 200px instead of center for mobile visibility
   const [player, setPlayer] = useState({
@@ -121,23 +174,44 @@ const Game = () => {
     }
   }
   
-  const playAttackSound = () => {
+  const playAttackHitSound = () => {
     const ctx = getAudioContext()
+    // Sharp impact sound
     const oscillator = ctx.createOscillator()
     const gainNode = ctx.createGain()
     
     oscillator.type = 'sawtooth'
-    oscillator.frequency.setValueAtTime(150, ctx.currentTime)
-    oscillator.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.2)
+    oscillator.frequency.setValueAtTime(200, ctx.currentTime)
+    oscillator.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.15)
     
-    gainNode.gain.setValueAtTime(0.2, ctx.currentTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2)
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
     
     oscillator.connect(gainNode)
     gainNode.connect(ctx.destination)
     
     oscillator.start(ctx.currentTime)
-    oscillator.stop(ctx.currentTime + 0.2)
+    oscillator.stop(ctx.currentTime + 0.15)
+  }
+  
+  const playHurtSound = () => {
+    const ctx = getAudioContext()
+    // Pain/hurt sound
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+    
+    oscillator.type = 'triangle'
+    oscillator.frequency.setValueAtTime(400, ctx.currentTime)
+    oscillator.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.25)
+    
+    gainNode.gain.setValueAtTime(0.15, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25)
+    
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+    
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + 0.25)
   }
   
   const playHealSound = () => {
@@ -161,6 +235,26 @@ const Game = () => {
         oscillator.stop(ctx.currentTime + 0.15)
       }, i * 50)
     })
+  }
+  
+  const playDiceResultSound = () => {
+    const ctx = getAudioContext()
+    // Play a satisfying "ding" sound when dice land
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+    
+    oscillator.type = 'sine'
+    oscillator.frequency.setValueAtTime(800, ctx.currentTime)
+    oscillator.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1)
+    
+    gainNode.gain.setValueAtTime(0.15, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
+    
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+    
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + 0.3)
   }
   
   const playChaosSound = () => {
@@ -422,15 +516,24 @@ const Game = () => {
         const damage = rolls.reduce((a, b) => a + b, 0)
         
         setDiceAnimation({ type: 'attack', rolls })
-        playAttackSound()
-        setDamageAnimation({ target: 'npc', value: damage })
+        
+        // Calculate when all dice finish (1 second animation + stagger delay for last dice)
+        const lastDiceFinishTime = 1000 + (diceCount - 1) * 200
+        
+        // Show result and play sounds after all dice finish
+        setTimeout(() => {
+          playDiceResultSound()
+          playAttackHitSound()
+          setTimeout(() => playHurtSound(), 100) // Hurt sound slightly after hit
+          setDamageAnimation({ target: 'npc', value: damage })
+        }, lastDiceFinishTime)
         
         setTimeout(() => {
           newState.npcHp = Math.max(0, newState.npcHp - damage)
           log.push(`You rolled ${rolls.join(', ')} = ${damage} damage!`)
           newState.effects.playerTripleDice = false
           continueBattleAfterAction(newState, log)
-        }, 800)
+        }, lastDiceFinishTime + 1500)
         return
       } else if (type === 'heal') {
         const diceCount = newState.effects.playerTripleDice ? 3 : 2
@@ -438,20 +541,33 @@ const Game = () => {
         const heal = rolls.reduce((a, b) => a + b, 0)
         
         setDiceAnimation({ type: 'heal', rolls })
-        playHealSound()
-        setDamageAnimation({ target: 'player', value: `+${heal}`, isHeal: true })
+        
+        // Calculate when all dice finish (1 second animation + stagger delay for last dice)
+        const lastDiceFinishTime = 1000 + (diceCount - 1) * 200
+        
+        // Show result and play sounds after all dice finish
+        setTimeout(() => {
+          playDiceResultSound()
+          playHealSound()
+          setDamageAnimation({ target: 'player', value: `+${heal}`, isHeal: true })
+        }, lastDiceFinishTime)
         
         setTimeout(() => {
           newState.playerHp = Math.min(100, newState.playerHp + heal)
           log.push(`You rolled ${rolls.join(', ')} = ${heal} HP healed!`)
           newState.effects.playerTripleDice = false
           continueBattleAfterAction(newState, log)
-        }, 800)
+        }, lastDiceFinishTime + 1500)
         return
       } else if (type === 'chaos' && newState.diceAvailable.chaos > 0) {
         const roll = rollDice()
         setDiceAnimation({ type: 'chaos', rolls: [roll] })
-        playChaosSound()
+        
+        // Play sounds after animation finishes (1 second)
+        setTimeout(() => {
+          playDiceResultSound()
+          playChaosSound()
+        }, 1000)
         
         setTimeout(() => {
           const effects = [
@@ -467,12 +583,17 @@ const Game = () => {
           log.push(`Chaos dice: ${effect.name}`)
           newState.diceAvailable.chaos = 0
           continueBattleAfterAction(newState, log)
-        }, 800)
+        }, 2500)
         return
       } else if (type === 'random' && newState.diceAvailable.randomEvent > 0) {
         const roll = rollDice()
         setDiceAnimation({ type: 'random', rolls: [roll] })
-        playChaosSound()
+        
+        // Play sounds after animation finishes (1 second)
+        setTimeout(() => {
+          playDiceResultSound()
+          playChaosSound()
+        }, 1000)
         
         setTimeout(() => {
           const events = [
@@ -507,12 +628,12 @@ const Game = () => {
           log.push(`Random event: ${event.name}`)
           newState.diceAvailable.randomEvent = 0
           continueBattleAfterAction(newState, log)
-        }, 800)
+        }, 2500)
         return
       }
       
       continueBattleAfterAction(newState, log)
-    }, 600)
+    }, 100)
   }
   
   const continueBattleAfterAction = (newState, log) => {
@@ -569,6 +690,9 @@ const Game = () => {
         newState.npcHp = Math.min(100, newState.npcHp + heal)
         log.push(`NPC healed for ${heal} HP`)
         newState.effects.npcTripleDice = false
+        
+        // Play heal sound
+        playHealSound()
       } else {
         const diceCount = newState.effects.npcTripleDice ? 3 : 2
         const rolls = Array.from({ length: diceCount }, rollDice)
@@ -576,6 +700,10 @@ const Game = () => {
         newState.playerHp = Math.max(0, newState.playerHp - damage)
         log.push(`NPC attacks for ${damage} damage!`)
         newState.effects.npcTripleDice = false
+        
+        // Play attack and hurt sounds
+        playAttackHitSound()
+        setTimeout(() => playHurtSound(), 100)
       }
     }
     
@@ -860,14 +988,12 @@ const Game = () => {
           <div className="dice-overlay">
             <div className="dice-container">
               {diceAnimation.rolls.map((roll, i) => (
-                <div key={i} className={`dice-roll-2d ${diceAnimation.type}`}>
-                  <div className="dice-energy" />
-                  <div className="dice-streak" />
-                  <div className="dice-front">
-                    <span className="dice-value">{roll}</span>
-                  </div>
-                  <div className="dice-outline" />
-                </div>
+                <DiceSlotMachine 
+                  key={i} 
+                  finalValue={roll} 
+                  type={diceAnimation.type}
+                  delay={i * 200}
+                />
               ))}
             </div>
           </div>
