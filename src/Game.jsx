@@ -12,8 +12,9 @@ const FLOOR_HEIGHT = 80
 const PLATFORM_HEIGHT = 20
 
 const Game = () => {
+  // Start player at 200px instead of center for mobile visibility
   const [player, setPlayer] = useState({
-    x: GAME_WIDTH / 2 - PLAYER_WIDTH / 2,
+    x: 200,
     y: GAME_HEIGHT - FLOOR_HEIGHT - PLAYER_HEIGHT,
     velocityY: 0,
     velocityX: 0,
@@ -34,6 +35,11 @@ const Game = () => {
   const keysPressed = useRef({})
   const gameLoopRef = useRef(null)
   const audioContextRef = useRef(null)
+  const battleStartAudioRef = useRef(null)
+  const battleMusicAudioRef = useRef(null)
+  const newFloorAudioRef = useRef(null)
+  const npcDialogueAudioRef = useRef(null)
+  const currentDialogueNPCRef = useRef(null)
   
   // Initialize audio context
   const getAudioContext = () => {
@@ -42,6 +48,35 @@ const Game = () => {
     }
     return audioContextRef.current
   }
+  
+  // Initialize audio elements
+  useEffect(() => {
+    battleStartAudioRef.current = new Audio('/battle_start.mp3')
+    battleMusicAudioRef.current = new Audio('/battle-music.mp3')
+    battleMusicAudioRef.current.loop = true
+    battleMusicAudioRef.current.volume = 0.1 // Lower volume for battle music
+    newFloorAudioRef.current = new Audio('/new_floor.mp3')
+    
+    return () => {
+      // Cleanup audio on unmount
+      if (battleStartAudioRef.current) {
+        battleStartAudioRef.current.pause()
+        battleStartAudioRef.current = null
+      }
+      if (battleMusicAudioRef.current) {
+        battleMusicAudioRef.current.pause()
+        battleMusicAudioRef.current = null
+      }
+      if (newFloorAudioRef.current) {
+        newFloorAudioRef.current.pause()
+        newFloorAudioRef.current = null
+      }
+      if (npcDialogueAudioRef.current) {
+        npcDialogueAudioRef.current.pause()
+        npcDialogueAudioRef.current = null
+      }
+    }
+  }, [])
   
   // Jump sound - upward swoosh
   const playJumpSound = () => {
@@ -212,6 +247,9 @@ const Game = () => {
       'npc6.png', 'npc7.png', 'npc8.png', 'npc9.png', 'npc10.png',
       'npc11.png', 'npc12.png'
     ]
+    const dialogues = [
+      'diag1.mp3', 'diag2.mp3', 'diag3.mp3', 'diag4.mp3', 'diag5.mp3', 'diag6.mp3', 'diag7.mp3', 'diag8.mp3', 'diag9.mp3', 'diag10.mp3', 'diag11.mp3'
+    ]
     let imageIndex = 0
     
     const NPC_SIZE = 70
@@ -229,7 +267,8 @@ const Game = () => {
           x: x,
           y: floorY - NPC_SIZE,
           size: NPC_SIZE,
-          image: `/npc/${npcImages[imageIndex % npcImages.length]}`
+          image: `/npc/${npcImages[imageIndex % npcImages.length]}`,
+          dialogue: `/npc-dialogues/${dialogues[Math.floor(Math.random() * dialogues.length)]}`
         })
         imageIndex++
       }
@@ -330,6 +369,20 @@ const Game = () => {
     })
     setBattleLog(['Battle started!'])
     setBattleMenu('main')
+    
+    // Play battle start sound, then battle music
+    if (battleStartAudioRef.current) {
+      battleStartAudioRef.current.currentTime = 0
+      battleStartAudioRef.current.play().catch(e => console.log('Battle start audio error:', e))
+      
+      // Start battle music after battle start sound finishes
+      battleStartAudioRef.current.onended = () => {
+        if (battleMusicAudioRef.current) {
+          battleMusicAudioRef.current.currentTime = 0
+          battleMusicAudioRef.current.play().catch(e => console.log('Battle music error:', e))
+        }
+      }
+    }
   }
   
   const forfeitBattle = () => {
@@ -338,6 +391,16 @@ const Game = () => {
     setDiceAnimation(null)
     setDamageAnimation(null)
     setBattleMenu('main')
+    
+    // Stop battle music
+    if (battleMusicAudioRef.current) {
+      battleMusicAudioRef.current.pause()
+      battleMusicAudioRef.current.currentTime = 0
+    }
+    if (battleStartAudioRef.current) {
+      battleStartAudioRef.current.pause()
+      battleStartAudioRef.current.currentTime = 0
+    }
   }
   
   const rollDice = () => Math.floor(Math.random() * 6) + 1
@@ -467,6 +530,13 @@ const Game = () => {
       log.push('Victory!')
       setDefeatedNPCs(prev => new Set([...prev, battleState.npc.id]))
       setBattleLog(log)
+      
+      // Stop battle music
+      if (battleMusicAudioRef.current) {
+        battleMusicAudioRef.current.pause()
+        battleMusicAudioRef.current.currentTime = 0
+      }
+      
       setTimeout(() => {
         setBattleState(null)
         setBattleLog([])
@@ -519,6 +589,13 @@ const Game = () => {
     if (newState.playerHp <= 0) {
       log.push('Defeat... Try again!')
       setBattleLog(log)
+      
+      // Stop battle music
+      if (battleMusicAudioRef.current) {
+        battleMusicAudioRef.current.pause()
+        battleMusicAudioRef.current.currentTime = 0
+      }
+      
       setTimeout(() => {
         setBattleState(null)
         setBattleLog([])
@@ -588,6 +665,54 @@ const Game = () => {
       checkNPCProximity()
     }
   }, [player.x, player.y, currentFloor, battleState])
+  
+  // Play NPC dialogue when near and can interact
+  useEffect(() => {
+    if (battleState) {
+      // Stop dialogue when battle starts
+      if (npcDialogueAudioRef.current) {
+        npcDialogueAudioRef.current.pause()
+        npcDialogueAudioRef.current = null
+        currentDialogueNPCRef.current = null
+      }
+      return
+    }
+    
+    // Find nearby NPC that player can interact with
+    const nearbyNPC = npcs.find(npc => canInteractWithNPC(npc))
+    
+    if (nearbyNPC) {
+      // If this is a different NPC, or no dialogue is playing
+      if (currentDialogueNPCRef.current !== nearbyNPC.id) {
+        // Stop previous dialogue
+        if (npcDialogueAudioRef.current) {
+          npcDialogueAudioRef.current.pause()
+          npcDialogueAudioRef.current = null
+        }
+        
+        // Play new dialogue
+        currentDialogueNPCRef.current = nearbyNPC.id
+        npcDialogueAudioRef.current = new Audio(nearbyNPC.dialogue)
+        npcDialogueAudioRef.current.volume = 0.7
+        npcDialogueAudioRef.current.play().catch(e => console.log('Dialogue audio error:', e))
+      }
+    } else {
+      // No nearby NPC, stop dialogue
+      if (npcDialogueAudioRef.current) {
+        npcDialogueAudioRef.current.pause()
+        npcDialogueAudioRef.current = null
+        currentDialogueNPCRef.current = null
+      }
+    }
+  }, [player.x, player.y, currentFloor, battleState, npcs, defeatedNPCs])
+  
+  // Play new floor sound when reaching a new floor
+  useEffect(() => {
+    if (currentFloor > 0 && newFloorAudioRef.current) {
+      newFloorAudioRef.current.currentTime = 0
+      newFloorAudioRef.current.play().catch(e => console.log('New floor audio error:', e))
+    }
+  }, [currentFloor])
 
   // Game loop
   useEffect(() => {
@@ -735,8 +860,13 @@ const Game = () => {
           <div className="dice-overlay">
             <div className="dice-container">
               {diceAnimation.rolls.map((roll, i) => (
-                <div key={i} className="dice-roll">
-                  {roll}
+                <div key={i} className={`dice-roll ${diceAnimation.type}`}>
+                  <div className="dice-face front">{roll}</div>
+                  <div className="dice-face back">{7 - roll}</div>
+                  <div className="dice-face right">{(roll % 6) + 1}</div>
+                  <div className="dice-face left">{((roll + 2) % 6) + 1}</div>
+                  <div className="dice-face top">{((roll + 1) % 6) + 1}</div>
+                  <div className="dice-face bottom">{((roll + 4) % 6) + 1}</div>
                 </div>
               ))}
             </div>
@@ -979,6 +1109,78 @@ const Game = () => {
               VICTORY!
             </div>
           )}
+        </div>
+      </div>
+      
+      {/* Mobile Controls */}
+      <div className="mobile-controls">
+        <div className="mobile-controls-left">
+          <button 
+            className="mobile-btn mobile-left"
+            onTouchStart={() => keysPressed.current['a'] = true}
+            onTouchEnd={() => keysPressed.current['a'] = false}
+            onMouseDown={() => keysPressed.current['a'] = true}
+            onMouseUp={() => keysPressed.current['a'] = false}
+          >
+            ←
+          </button>
+          <button 
+            className="mobile-btn mobile-right"
+            onTouchStart={() => keysPressed.current['d'] = true}
+            onTouchEnd={() => keysPressed.current['d'] = false}
+            onMouseDown={() => keysPressed.current['d'] = true}
+            onMouseUp={() => keysPressed.current['d'] = false}
+          >
+            →
+          </button>
+        </div>
+        <div className="mobile-controls-right">
+          <button 
+            className="mobile-btn mobile-jump"
+            onTouchStart={(e) => {
+              e.preventDefault()
+              if (player.isGrounded && !battleState) {
+                playJumpSound()
+                setPlayer(prev => ({
+                  ...prev,
+                  velocityY: JUMP_FORCE,
+                  isGrounded: false
+                }))
+              }
+            }}
+            onClick={(e) => {
+              e.preventDefault()
+              if (player.isGrounded && !battleState) {
+                playJumpSound()
+                setPlayer(prev => ({
+                  ...prev,
+                  velocityY: JUMP_FORCE,
+                  isGrounded: false
+                }))
+              }
+            }}
+          >
+            JUMP
+          </button>
+          <button 
+            className="mobile-btn mobile-interact"
+            onTouchStart={(e) => {
+              e.preventDefault()
+              const nearbyNPC = npcs.find(npc => canInteractWithNPC(npc))
+              if (nearbyNPC) {
+                startBattle(nearbyNPC)
+              }
+            }}
+            onClick={(e) => {
+              e.preventDefault()
+              const nearbyNPC = npcs.find(npc => canInteractWithNPC(npc))
+              if (nearbyNPC) {
+                startBattle(nearbyNPC)
+              }
+            }}
+          >
+            E
+          </button>
         </div>
       </div>
     </div>
