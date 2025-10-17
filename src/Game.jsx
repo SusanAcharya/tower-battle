@@ -860,13 +860,13 @@ const Game = () => {
           <div className="dice-overlay">
             <div className="dice-container">
               {diceAnimation.rolls.map((roll, i) => (
-                <div key={i} className={`dice-roll ${diceAnimation.type}`}>
-                  <div className="dice-face front">{roll}</div>
-                  <div className="dice-face back">{7 - roll}</div>
-                  <div className="dice-face right">{(roll % 6) + 1}</div>
-                  <div className="dice-face left">{((roll + 2) % 6) + 1}</div>
-                  <div className="dice-face top">{((roll + 1) % 6) + 1}</div>
-                  <div className="dice-face bottom">{((roll + 4) % 6) + 1}</div>
+                <div key={i} className={`dice-roll-2d ${diceAnimation.type}`}>
+                  <div className="dice-energy" />
+                  <div className="dice-streak" />
+                  <div className="dice-front">
+                    <span className="dice-value">{roll}</span>
+                  </div>
+                  <div className="dice-outline" />
                 </div>
               ))}
             </div>
