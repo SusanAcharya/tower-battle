@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import './Game.css'
+import RiveDice from './RiveDice'
 
 const GAME_WIDTH = 1000
 const GAME_HEIGHT = 600
@@ -11,54 +12,22 @@ const MOVE_SPEED = 5
 const FLOOR_HEIGHT = 80
 const PLATFORM_HEIGHT = 20
 
-// Dice Slot Machine Component
-const DiceSlotMachine = ({ finalValue, type, delay = 0 }) => {
-  const [displayValue, setDisplayValue] = useState(1)
-  const [isSpinning, setIsSpinning] = useState(true)
-  
-  useEffect(() => {
-    let interval
-    let timeout
-    
-    // Start spinning after delay
-    const startTimeout = setTimeout(() => {
-      setIsSpinning(true)
-      
-      // Rapid spinning for 0.7 seconds
-      interval = setInterval(() => {
-        setDisplayValue(Math.floor(Math.random() * 6) + 1)
-      }, 50)
-      
-      // Slow down and stop at final value
-      timeout = setTimeout(() => {
-        clearInterval(interval)
-        
-        // Slower spinning for last 0.3 seconds
-        let count = 0
-        const slowInterval = setInterval(() => {
-          setDisplayValue(Math.floor(Math.random() * 6) + 1)
-          count++
-          if (count >= 3) {
-            clearInterval(slowInterval)
-            setDisplayValue(finalValue)
-            setIsSpinning(false)
-          }
-        }, 100)
-      }, 700)
-    }, delay)
-    
-    return () => {
-      clearTimeout(startTimeout)
-      clearTimeout(timeout)
-      clearInterval(interval)
-    }
-  }, [finalValue, delay])
-  
+// Dice Pair Container - rolls both dice simultaneously like dice implementation.txt
+const DicePairContainer = ({ rolls, type, rolling, animationId }) => {
   return (
-    <div className={`dice-roll-slot ${type} ${isSpinning ? 'spinning' : 'stopped'}`}>
-      <div className="dice-glow" />
-      <div className="dice-number-display">
-        {displayValue}
+    <div className={`dice-pair-container ${type}`}>
+      <div className={`dice-pair ${rolling ? 'rolling' : ''}`}>
+        {rolls.map((roll, i) => (
+          <div key={`die-wrapper-${animationId}-${i}`} className={`dice-glow-wrapper ${type} ${rolling ? 'rolling' : ''}`}>
+            <RiveDice
+              key={`die-${animationId}-${i}-${roll}`}
+              rolling={rolling}
+              onEnd={() => {}}
+              outcome={roll}
+              size={150}
+            />
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -82,9 +51,10 @@ const Game = () => {
   const [defeatedNPCs, setDefeatedNPCs] = useState(new Set())
   const [battleState, setBattleState] = useState(null) // { npc, playerHp, npcHp, turn, diceAvailable }
   const [battleLog, setBattleLog] = useState([])
-  const [diceAnimation, setDiceAnimation] = useState(null)
+  const [diceAnimation, setDiceAnimation] = useState(null) // { type, rolls, rolling, id }
   const [damageAnimation, setDamageAnimation] = useState(null)
   const [battleMenu, setBattleMenu] = useState('main') // 'main' or 'fight'
+  const diceAnimationIdRef = useRef(0)
   const keysPressed = useRef({})
   const gameLoopRef = useRef(null)
   const audioContextRef = useRef(null)
@@ -277,6 +247,53 @@ const Game = () => {
         oscillator.stop(ctx.currentTime + 0.1)
       }, i * 40)
     }
+  }
+  
+  // Dice finish sound effects - play random sound from each category
+  const playAttackFinishSound = () => {
+    const attackSounds = [
+      '/sfx/attack/punch1.wav',
+      '/sfx/attack/punch2.wav',
+      '/sfx/attack/punch3.mp3',
+      '/sfx/attack/punch4.wav'
+    ]
+    const randomSound = attackSounds[Math.floor(Math.random() * attackSounds.length)]
+    const audio = new Audio(randomSound)
+    audio.volume = 0.6
+    audio.play().catch(e => console.log('Attack finish audio error:', e))
+  }
+  
+  const playHealFinishSound = () => {
+    const healSounds = [
+      '/sfx/heal/heal1.mp3',
+      '/sfx/heal/heal2.mp3'
+    ]
+    const randomSound = healSounds[Math.floor(Math.random() * healSounds.length)]
+    const audio = new Audio(randomSound)
+    audio.volume = 0.5
+    audio.play().catch(e => console.log('Heal finish audio error:', e))
+  }
+  
+  const playChaosFinishSound = () => {
+    const chaosSounds = [
+      '/sfx/chaos/chaos1.mp3',
+      '/sfx/chaos/chaos2.mp3'
+    ]
+    const randomSound = chaosSounds[Math.floor(Math.random() * chaosSounds.length)]
+    const audio = new Audio(randomSound)
+    audio.volume = 0.5
+    audio.play().catch(e => console.log('Chaos finish audio error:', e))
+  }
+  
+  const playEventFinishSound = () => {
+    const eventSounds = [
+      '/sfx/event/event1.mp3',
+      '/sfx/event/event2.mp3'
+    ]
+    const randomSound = eventSounds[Math.floor(Math.random() * eventSounds.length)]
+    const audio = new Audio(randomSound)
+    audio.volume = 0.5
+    audio.play().catch(e => console.log('Event finish audio error:', e))
   }
   
   
@@ -502,138 +519,153 @@ const Game = () => {
   const handleDiceAction = (type) => {
     if (!battleState || battleState.turn !== 'player') return
     
-    // Play dice roll sound and animation
-    playDiceRollSound()
-    setDiceAnimation({ type, rolls: [] })
+    let newState = { ...battleState }
+    let log = [...battleLog]
+    const ROLL_ANIM_MS = 1000
     
-    setTimeout(() => {
-      let newState = { ...battleState }
-      let log = [...battleLog]
+    // Generate unique animation ID for this roll
+    diceAnimationIdRef.current += 1
+    const animId = diceAnimationIdRef.current
+    
+    if (type === 'attack') {
+      const diceCount = newState.effects.playerTripleDice ? 3 : 2
+      const rolls = Array.from({ length: diceCount }, rollDice)
+      const damage = rolls.reduce((a, b) => a + b, 0)
       
-      if (type === 'attack') {
-        const diceCount = newState.effects.playerTripleDice ? 3 : 2
-        const rolls = Array.from({ length: diceCount }, rollDice)
-        const damage = rolls.reduce((a, b) => a + b, 0)
-        
-        setDiceAnimation({ type: 'attack', rolls })
-        
-        // Calculate when all dice finish (1 second animation + stagger delay for last dice)
-        const lastDiceFinishTime = 1000 + (diceCount - 1) * 200
-        
-        // Show result and play sounds after all dice finish
-        setTimeout(() => {
-          playDiceResultSound()
-          playAttackHitSound()
-          setTimeout(() => playHurtSound(), 100) // Hurt sound slightly after hit
-          setDamageAnimation({ target: 'npc', value: damage })
-        }, lastDiceFinishTime)
-        
-        setTimeout(() => {
-          newState.npcHp = Math.max(0, newState.npcHp - damage)
-          log.push(`You rolled ${rolls.join(', ')} = ${damage} damage!`)
-          newState.effects.playerTripleDice = false
-          continueBattleAfterAction(newState, log)
-        }, lastDiceFinishTime + 1500)
-        return
-      } else if (type === 'heal') {
-        const diceCount = newState.effects.playerTripleDice ? 3 : 2
-        const rolls = Array.from({ length: diceCount }, rollDice)
-        const heal = rolls.reduce((a, b) => a + b, 0)
-        
-        setDiceAnimation({ type: 'heal', rolls })
-        
-        // Calculate when all dice finish (1 second animation + stagger delay for last dice)
-        const lastDiceFinishTime = 1000 + (diceCount - 1) * 200
-        
-        // Show result and play sounds after all dice finish
-        setTimeout(() => {
-          playDiceResultSound()
-          playHealSound()
-          setDamageAnimation({ target: 'player', value: `+${heal}`, isHeal: true })
-        }, lastDiceFinishTime)
-        
-        setTimeout(() => {
-          newState.playerHp = Math.min(100, newState.playerHp + heal)
-          log.push(`You rolled ${rolls.join(', ')} = ${heal} HP healed!`)
-          newState.effects.playerTripleDice = false
-          continueBattleAfterAction(newState, log)
-        }, lastDiceFinishTime + 1500)
-        return
-      } else if (type === 'chaos' && newState.diceAvailable.chaos > 0) {
-        const roll = rollDice()
-        setDiceAnimation({ type: 'chaos', rolls: [roll] })
-        
-        // Play sounds after animation finishes (1 second)
-        setTimeout(() => {
-          playDiceResultSound()
-          playChaosSound()
-        }, 1000)
-        
-        setTimeout(() => {
-          const effects = [
-            { name: 'Player Buff: +10 HP', action: () => { newState.playerHp = Math.min(100, newState.playerHp + 10) } },
-            { name: 'Player Debuff: -5 HP', action: () => { newState.playerHp = Math.max(0, newState.playerHp - 5) } },
-            { name: 'NPC Debuff: -10 HP', action: () => { newState.npcHp = Math.max(0, newState.npcHp - 10) } },
-            { name: 'NPC Buff: +5 HP', action: () => { newState.npcHp = Math.min(100, newState.npcHp + 5) } },
-            { name: 'Nothing happens', action: () => {} },
-            { name: 'Skip next turn', action: () => { newState.effects.npcSkipNext = true } }
-          ]
-          const effect = effects[roll - 1]
-          effect.action()
-          log.push(`Chaos dice: ${effect.name}`)
-          newState.diceAvailable.chaos = 0
-          continueBattleAfterAction(newState, log)
-        }, 2500)
-        return
-      } else if (type === 'random' && newState.diceAvailable.randomEvent > 0) {
-        const roll = rollDice()
-        setDiceAnimation({ type: 'random', rolls: [roll] })
-        
-        // Play sounds after animation finishes (1 second)
-        setTimeout(() => {
-          playDiceResultSound()
-          playChaosSound()
-        }, 1000)
-        
-        setTimeout(() => {
-          const events = [
-            { name: 'Meteor falls! Both -10 HP', action: () => { 
-              newState.playerHp = Math.max(0, newState.playerHp - 10)
-              newState.npcHp = Math.max(0, newState.npcHp - 10)
-            }},
-            { name: 'HP Swapped!', action: () => { 
-              const temp = newState.playerHp
-              newState.playerHp = newState.npcHp
-              newState.npcHp = temp
-            }},
-            { name: 'Poison gas! -5 HP per turn', action: () => { 
-              newState.effects.playerPoison = true
-              newState.effects.npcPoison = true
-            }},
-            { name: 'Power surge! Next turn 3 dice', action: () => { 
-              newState.effects.playerTripleDice = true
-              newState.effects.npcTripleDice = true
-            }},
-            { name: 'Curse! Both -25% HP', action: () => { 
-              newState.playerHp = Math.max(0, Math.floor(newState.playerHp * 0.75))
-              newState.npcHp = Math.max(0, Math.floor(newState.npcHp * 0.75))
-            }},
-            { name: 'Divine blessing! Full heal', action: () => { 
-              newState.playerHp = 100
-              newState.npcHp = 100
-            }}
-          ]
-          const event = events[roll - 1]
-          event.action()
-          log.push(`Random event: ${event.name}`)
-          newState.diceAvailable.randomEvent = 0
-          continueBattleAfterAction(newState, log)
-        }, 2500)
-        return
-      }
+      // Start rolling animation - both dice roll simultaneously
+      playDiceRollSound()
+      setDiceAnimation({ type: 'attack', rolls, rolling: true, id: animId })
       
-      continueBattleAfterAction(newState, log)
-    }, 100)
+      // After 1 second (ROLL_ANIM_MS), stop rolling and show results
+      setTimeout(() => {
+        setDiceAnimation({ type: 'attack', rolls, rolling: false, id: animId })
+        playDiceResultSound()
+        playAttackFinishSound() // Play random attack finish sound
+        playAttackHitSound()
+        setTimeout(() => playHurtSound(), 100)
+        setDamageAnimation({ target: 'npc', value: damage })
+      }, ROLL_ANIM_MS)
+      
+      // After showing results, apply damage and continue
+      setTimeout(() => {
+        newState.npcHp = Math.max(0, newState.npcHp - damage)
+        log.push(`You rolled ${rolls.join(', ')} = ${damage} damage!`)
+        newState.effects.playerTripleDice = false
+        continueBattleAfterAction(newState, log)
+      }, ROLL_ANIM_MS + 1500)
+      return
+    } else if (type === 'heal') {
+      const diceCount = newState.effects.playerTripleDice ? 3 : 2
+      const rolls = Array.from({ length: diceCount }, rollDice)
+      const heal = rolls.reduce((a, b) => a + b, 0)
+      
+      // Start rolling animation - both dice roll simultaneously
+      playDiceRollSound()
+      setDiceAnimation({ type: 'heal', rolls, rolling: true, id: animId })
+      
+      // After 1 second, stop rolling and show results
+      setTimeout(() => {
+        setDiceAnimation({ type: 'heal', rolls, rolling: false, id: animId })
+        playDiceResultSound()
+        playHealFinishSound() // Play random heal finish sound
+        playHealSound()
+        setDamageAnimation({ target: 'player', value: `+${heal}`, isHeal: true })
+      }, ROLL_ANIM_MS)
+      
+      // After showing results, apply heal and continue
+      setTimeout(() => {
+        newState.playerHp = Math.min(100, newState.playerHp + heal)
+        log.push(`You rolled ${rolls.join(', ')} = ${heal} HP healed!`)
+        newState.effects.playerTripleDice = false
+        continueBattleAfterAction(newState, log)
+      }, ROLL_ANIM_MS + 1500)
+      return
+    } else if (type === 'chaos' && newState.diceAvailable.chaos > 0) {
+      const roll = rollDice()
+      
+      // Start rolling animation
+      playDiceRollSound()
+      setDiceAnimation({ type: 'chaos', rolls: [roll], rolling: true, id: animId })
+      
+      // After 1 second, stop rolling
+      setTimeout(() => {
+        setDiceAnimation({ type: 'chaos', rolls: [roll], rolling: false, id: animId })
+        playDiceResultSound()
+        playChaosFinishSound() // Play random chaos finish sound
+        playChaosSound()
+      }, ROLL_ANIM_MS)
+      
+      // After showing results, apply effect
+      setTimeout(() => {
+        const effects = [
+          { name: 'Player Buff: +10 HP', action: () => { newState.playerHp = Math.min(100, newState.playerHp + 10) } },
+          { name: 'Player Debuff: -5 HP', action: () => { newState.playerHp = Math.max(0, newState.playerHp - 5) } },
+          { name: 'NPC Debuff: -10 HP', action: () => { newState.npcHp = Math.max(0, newState.npcHp - 10) } },
+          { name: 'NPC Buff: +5 HP', action: () => { newState.npcHp = Math.min(100, newState.npcHp + 5) } },
+          { name: 'Nothing happens', action: () => {} },
+          { name: 'Skip next turn', action: () => { newState.effects.npcSkipNext = true } }
+        ]
+        const effect = effects[roll - 1]
+        effect.action()
+        log.push(`Chaos dice: ${effect.name}`)
+        newState.diceAvailable.chaos = 0
+        continueBattleAfterAction(newState, log)
+      }, ROLL_ANIM_MS + 1500)
+      return
+    } else if (type === 'random' && newState.diceAvailable.randomEvent > 0) {
+      const roll = rollDice()
+      
+      // Start rolling animation
+      playDiceRollSound()
+      setDiceAnimation({ type: 'random', rolls: [roll], rolling: true, id: animId })
+      
+      // After 1 second, stop rolling
+      setTimeout(() => {
+        setDiceAnimation({ type: 'random', rolls: [roll], rolling: false, id: animId })
+        playDiceResultSound()
+        playEventFinishSound() // Play random event finish sound
+        playChaosSound()
+      }, ROLL_ANIM_MS)
+      
+      // After showing results, apply event
+      setTimeout(() => {
+        const events = [
+          { name: 'Meteor falls! Both -10 HP', action: () => { 
+            newState.playerHp = Math.max(0, newState.playerHp - 10)
+            newState.npcHp = Math.max(0, newState.npcHp - 10)
+          }},
+          { name: 'HP Swapped!', action: () => { 
+            const temp = newState.playerHp
+            newState.playerHp = newState.npcHp
+            newState.npcHp = temp
+          }},
+          { name: 'Poison gas! -5 HP per turn', action: () => { 
+            newState.effects.playerPoison = true
+            newState.effects.npcPoison = true
+          }},
+          { name: 'Power surge! Next turn 3 dice', action: () => { 
+            newState.effects.playerTripleDice = true
+            newState.effects.npcTripleDice = true
+          }},
+          { name: 'Curse! Both -25% HP', action: () => { 
+            newState.playerHp = Math.max(0, Math.floor(newState.playerHp * 0.75))
+            newState.npcHp = Math.max(0, Math.floor(newState.npcHp * 0.75))
+          }},
+          { name: 'Divine blessing! Full heal', action: () => { 
+            newState.playerHp = 100
+            newState.npcHp = 100
+          }}
+        ]
+        const event = events[roll - 1]
+        event.action()
+        log.push(`Random event: ${event.name}`)
+        newState.diceAvailable.randomEvent = 0
+        continueBattleAfterAction(newState, log)
+      }, ROLL_ANIM_MS + 1500)
+      return
+    }
+    
+    continueBattleAfterAction(newState, log)
   }
   
   const continueBattleAfterAction = (newState, log) => {
@@ -987,14 +1019,12 @@ const Game = () => {
         {diceAnimation && (
           <div className="dice-overlay">
             <div className="dice-container">
-              {diceAnimation.rolls.map((roll, i) => (
-                <DiceSlotMachine 
-                  key={i} 
-                  finalValue={roll} 
-                  type={diceAnimation.type}
-                  delay={i * 200}
-                />
-              ))}
+              <DicePairContainer 
+                rolls={diceAnimation.rolls}
+                type={diceAnimation.type}
+                rolling={diceAnimation.rolling}
+                animationId={diceAnimation.id}
+              />
             </div>
           </div>
         )}

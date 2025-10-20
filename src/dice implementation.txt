@@ -3623,3 +3623,22 @@ export default DiceShootout;
 
 .help-rules ul { padding-left: 18px; }
 .help-rules li { font-family: 'Jersey 10'; font-size: 22px; line-height: 1.4; margin-bottom: 6px; }
+
+
+import { Alignment, Fit, Layout, useRive } from "@rive-app/react-canvas";
+
+const RiveWrapper = () => {
+  const { RiveComponent } = useRive({
+    src: "btn.riv",
+    stateMachines: "Motion",
+    autoplay: true,
+    layout: new Layout({
+      fit: Fit.Cover,
+      alignment: Alignment.Center
+    })
+  });
+
+  return <RiveComponent />;
+};
+
+export default RiveWrapper;

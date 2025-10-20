@@ -671,6 +671,147 @@
   flex-wrap: wrap;
 }
 
+/* Dice Pair Container - for simultaneous rolling */
+.dice-pair-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dice-pair {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.dice-pair.rolling {
+  animation: dice-bounce 700ms ease-out;
+}
+
+@keyframes dice-bounce {
+  0% { transform: translateY(-4px) scale(0.98); }
+  10% { transform: translateY(0) scale(1.04); }
+  30% { transform: translateY(-20px) scale(1); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Dice Glow Wrapper - creates glowing effect around dice */
+.dice-glow-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+/* Attack - Red Glow */
+.dice-glow-wrapper.attack {
+  filter: drop-shadow(0 0 20px rgba(255, 70, 70, 0.6))
+          drop-shadow(0 0 40px rgba(255, 70, 70, 0.4));
+}
+
+.dice-glow-wrapper.attack.rolling {
+  filter: drop-shadow(0 0 30px rgba(255, 70, 70, 0.8))
+          drop-shadow(0 0 60px rgba(255, 70, 70, 0.6))
+          drop-shadow(0 0 90px rgba(255, 70, 70, 0.4));
+  animation: attackGlowPulse 0.5s ease-in-out infinite;
+}
+
+/* Heal - Green Glow */
+.dice-glow-wrapper.heal {
+  filter: drop-shadow(0 0 20px rgba(70, 255, 120, 0.6))
+          drop-shadow(0 0 40px rgba(70, 255, 120, 0.4));
+}
+
+.dice-glow-wrapper.heal.rolling {
+  filter: drop-shadow(0 0 30px rgba(70, 255, 120, 0.8))
+          drop-shadow(0 0 60px rgba(70, 255, 120, 0.6))
+          drop-shadow(0 0 90px rgba(70, 255, 120, 0.4));
+  animation: healGlowPulse 0.5s ease-in-out infinite;
+}
+
+/* Chaos - Purple Glow */
+.dice-glow-wrapper.chaos {
+  filter: drop-shadow(0 0 20px rgba(190, 70, 255, 0.6))
+          drop-shadow(0 0 40px rgba(190, 70, 255, 0.4));
+}
+
+.dice-glow-wrapper.chaos.rolling {
+  filter: drop-shadow(0 0 30px rgba(190, 70, 255, 0.8))
+          drop-shadow(0 0 60px rgba(190, 70, 255, 0.6))
+          drop-shadow(0 0 90px rgba(190, 70, 255, 0.4));
+  animation: chaosGlowPulse 0.5s ease-in-out infinite;
+}
+
+/* Random - Gold Glow */
+.dice-glow-wrapper.random {
+  filter: drop-shadow(0 0 20px rgba(255, 210, 70, 0.6))
+          drop-shadow(0 0 40px rgba(255, 210, 70, 0.4));
+}
+
+.dice-glow-wrapper.random.rolling {
+  filter: drop-shadow(0 0 30px rgba(255, 210, 70, 0.8))
+          drop-shadow(0 0 60px rgba(255, 210, 70, 0.6))
+          drop-shadow(0 0 90px rgba(255, 210, 70, 0.4));
+  animation: randomGlowPulse 0.5s ease-in-out infinite;
+}
+
+/* Glow pulse animations for each type */
+@keyframes attackGlowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 30px rgba(255, 70, 70, 0.8))
+            drop-shadow(0 0 60px rgba(255, 70, 70, 0.6))
+            drop-shadow(0 0 90px rgba(255, 70, 70, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(255, 70, 70, 1))
+            drop-shadow(0 0 80px rgba(255, 70, 70, 0.8))
+            drop-shadow(0 0 120px rgba(255, 70, 70, 0.6));
+  }
+}
+
+@keyframes healGlowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 30px rgba(70, 255, 120, 0.8))
+            drop-shadow(0 0 60px rgba(70, 255, 120, 0.6))
+            drop-shadow(0 0 90px rgba(70, 255, 120, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(70, 255, 120, 1))
+            drop-shadow(0 0 80px rgba(70, 255, 120, 0.8))
+            drop-shadow(0 0 120px rgba(70, 255, 120, 0.6));
+  }
+}
+
+@keyframes chaosGlowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 30px rgba(190, 70, 255, 0.8))
+            drop-shadow(0 0 60px rgba(190, 70, 255, 0.6))
+            drop-shadow(0 0 90px rgba(190, 70, 255, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(190, 70, 255, 1))
+            drop-shadow(0 0 80px rgba(190, 70, 255, 0.8))
+            drop-shadow(0 0 120px rgba(190, 70, 255, 0.6));
+  }
+}
+
+@keyframes randomGlowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 30px rgba(255, 210, 70, 0.8))
+            drop-shadow(0 0 60px rgba(255, 210, 70, 0.6))
+            drop-shadow(0 0 90px rgba(255, 210, 70, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(255, 210, 70, 1))
+            drop-shadow(0 0 80px rgba(255, 210, 70, 0.8))
+            drop-shadow(0 0 120px rgba(255, 210, 70, 0.6));
+  }
+}
+
 /* Dice Slot Machine */
 .dice-roll-slot {
   width: 150px;
