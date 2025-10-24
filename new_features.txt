@@ -1,0 +1,212 @@
+Game Requirements Document: Boss Battles & Items System
+1. Overview
+
+This document outlines the design, mechanics, and implementation details for the boss battles, item system, inventory management, and battle screen in the arcade platformer game. The goal is to make battles strategic, immersive, and visually engaging, while integrating Web3 mechanics such as limited-use items and progression.
+
+2. Boss System
+2.1 Boss Frequency
+
+A boss appears every 2 floors in the tower.
+
+These are main bosses, harder than normal NPC encounters.
+
+Players must defeat the boss to progress to higher floors.
+
+2.2 Boss Behavior
+
+Each boss has:
+
+HP bar
+
+Strengths and weaknesses against item types
+
+Unique attacks and animations
+
+Bosses have phases triggered at specific HP thresholds (50%, 20%), modifying attack patterns and strategy.
+
+2.3 Current Boss Roster (5 Bosses)
+
+Flame Titan
+
+Strong against: Fire-based attacks
+
+Weak against: Ice-based attacks
+
+Signature move: Firewave (AOE damage across player area)
+
+Visuals: Lava cracks, fiery aura
+
+Sound: Roaring flames, rumbling lava
+
+Toxic Queen
+
+Strong against: Poison attacks
+
+Weak against: Electric or Blood attacks
+
+Signature move: Toxin Spray (applies stacking poison)
+
+Visuals: Green mist, venomous spikes
+
+Sound: Hissing, bubbling liquid
+
+Ironclad Golem
+
+Strong against: Physical/attack dice
+
+Weak against: Acid and Fire items
+
+Signature move: Shield Slam (stuns player, reduces attack effectiveness)
+
+Visuals: Metallic sheen, sparks on impact
+
+Sound: Clanking, heavy footsteps
+
+Frost Warden
+
+Strong against: Ice attacks
+
+Weak against: Fire or Wind items
+
+Signature move: Ice Barrage (slows player movement and dice roll timing)
+
+Visuals: Frost-covered armor, snow flurries
+
+Sound: Ice cracking, chilling wind
+
+Shadow Reaper
+
+Strong against: Shadow or trickster items
+
+Weak against: Light, Fire, or Blood items
+
+Signature move: Soul Drain (steals HP from player, boosts own HP)
+
+Visuals: Dark aura, swirling shadow effects
+
+Sound: Whispering, echoing strikes
+
+3. Item System
+3.1 Item Types
+
+Attack Items: Fire Oil, Poison Vial, Acid Flask, Lightning Shard, Ice Charm
+
+Utility Items: Smoke Bomb, Shield Potion, Frost Barrier, Mirror Crystal
+
+Healing Items: Medkit, Bandages, Antibiotics (cures poison or debuffs)
+
+3.2 Mechanics
+
+Items are one-time use, applied before rolling an attack dice.
+
+Each item applies an effect to the next dice roll or action.
+
+Some items may have side effects (e.g., Fire Oil can also damage the player if misused).
+
+3.3 Item Effect Examples
+
+Fire Oil: Adds burn damage over 3 turns, triggers fire particles on high rolls.
+
+Poison Vial: Stacks poison, small damage per turn.
+
+Acid Flask: Reduces boss armor for next 2 rolls.
+
+Ice Charm: Freezes or slows boss for 1 turn.
+
+Antibiotics: Neutralizes poison or toxin effects on player.
+
+3.4 Visuals
+
+Dice glow in the corresponding element’s color.
+
+Boss reacts visually: armor melting, poison cloud, frost covering, sparks.
+
+Particle effects emphasize elemental impact.
+
+4. Inventory System
+4.1 Inventory Rules
+
+Inventory space: 50 units total
+
+Item cost: Each item occupies 5 units
+
+Starting inventory: Player starts with 1 of each item and 1 of each antibiotic (total 12 items)
+
+Players must manage inventory space, creating strategic choices for battles.
+
+4.2 Usage
+
+During preparation or mid-battle, players select items to use on upcoming dice rolls.
+
+Once used, the item is removed from inventory.
+
+Items can be replenished through gacha boxes, missions, or shop purchases.
+
+5. Battle Screen
+5.1 Layout
+
+Player: Positioned on the left
+
+Boss: Positioned on the right
+
+Dice selection panel: Bottom center or bottom left, showing all dice and applied items
+
+HP bars: Top left (player) and top right (boss)
+
+Buff/debuff icons: Above character portraits to show active effects
+
+Environment: Dynamic based on floor and boss type (lava, poison mist, ice, shadows)
+
+5.2 Interactions
+
+Players select dice and items each turn.
+
+Boss performs AI actions each turn, visually represented with animations.
+
+Dice rolls trigger visual effects tied to the dice type and applied items.
+
+5.3 Audio
+
+Background music: Boss-specific tracks
+
+SFX: Dice roll, attack, item usage, boss attack, critical hits, environmental hazards
+
+Audio changes dynamically with boss phases or critical events (e.g., low HP, special attack triggers)
+
+6. Battle Flow
+
+Player selects dice and applies items.
+
+Roll dice → triggers effects based on dice type + item modifiers.
+
+Boss responds with AI attack or special move.
+
+Update HP, buffs/debuffs, and visual feedback.
+
+Repeat until player or boss HP reaches zero.
+
+Upon boss defeat: loot item rewards, gacha spins, and progression to next floor.
+
+Player inventory and item cooldowns updated.
+
+7. Web3 Integration Considerations
+
+Items and tickets can be tokenized for ownership, trades, or rare drops.
+
+Leaderboards track highest floors, fastest boss kills, or XP.
+
+Items can be rewarded as part of Web3 incentives for top performers or gacha purchases.
+
+8. Key Requirements for Development Team
+
+Implement boss AI system with strengths, weaknesses, and signature moves
+
+Create elemental item system, including visual effects, inventory, and usage rules
+
+Build battle screen layout with dice, HP, buffs/debuffs, and dynamic environment
+
+Implement battle music and SFX triggers for each action
+
+Design inventory management and item consumption rules
+
+Ensure boss phase mechanics (triggered at specific HP thresholds)
