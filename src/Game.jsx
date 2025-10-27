@@ -335,6 +335,7 @@ const Game = () => {
   const audioContextRef = useRef(null)
   const battleStartAudioRef = useRef(null)
   const battleMusicAudioRef = useRef(null)
+  const forfeitAudioRef = useRef(null)
   const newFloorAudioRef = useRef(null)
   const npcDialogueAudioRef = useRef(null)
   const currentDialogueNPCRef = useRef(null)
@@ -352,6 +353,8 @@ const Game = () => {
     battleMusicAudioRef.current = new Audio('/sound/battlemusic.mp3')
     battleMusicAudioRef.current.loop = true
     battleMusicAudioRef.current.volume = 0.2
+    forfeitAudioRef.current = new Audio('/sound/forfeit.mp3')
+    forfeitAudioRef.current.volume = 0.5
     newFloorAudioRef.current = new Audio('/sound/cardflip.mp3')
     
     return () => {
@@ -363,6 +366,10 @@ const Game = () => {
       if (battleMusicAudioRef.current) {
         battleMusicAudioRef.current.pause()
         battleMusicAudioRef.current = null
+      }
+      if (forfeitAudioRef.current) {
+        forfeitAudioRef.current.pause()
+        forfeitAudioRef.current = null
       }
       if (newFloorAudioRef.current) {
         newFloorAudioRef.current.pause()
@@ -1562,6 +1569,11 @@ const Game = () => {
         }
         // F - Forfeit
         if (e.key === 'f' || e.key === 'F') {
+          // Play forfeit sound when confirmation opens
+          if (forfeitAudioRef.current) {
+            forfeitAudioRef.current.currentTime = 0
+            forfeitAudioRef.current.play().catch(e => console.log('Forfeit audio error:', e))
+          }
           setShowForfeitConfirm(true)
         }
       }
@@ -1799,7 +1811,14 @@ const Game = () => {
       <div className="pokemon-battle-screen">
         {/* Forfeit Button - Bottom Left */}
         <div className="forfeit-button-bottom-left">
-          <button className="forfeit-button" onClick={() => setShowForfeitConfirm(true)}>
+          <button className="forfeit-button" onClick={() => {
+            // Play forfeit sound when confirmation opens
+            if (forfeitAudioRef.current) {
+              forfeitAudioRef.current.currentTime = 0
+              forfeitAudioRef.current.play().catch(e => console.log('Forfeit audio error:', e))
+            }
+            setShowForfeitConfirm(true)
+          }}>
             <span className="btn-keybind-forfeit">[ F ]</span>
              FORFEIT
           </button>
