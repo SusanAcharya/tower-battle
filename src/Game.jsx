@@ -350,10 +350,12 @@ const Game = () => {
   
   // Initialize audio elements with new sounds
   useEffect(() => {
+    battleStartAudioRef.current = new Audio('/sound/battle-start.mp3')
+    battleStartAudioRef.current.volume = 0.5
     battleMusicAudioRef.current = new Audio('/sound/battlemusic.mp3')
     battleMusicAudioRef.current.loop = true
     battleMusicAudioRef.current.volume = 0.2
-    forfeitAudioRef.current = new Audio('/sound/forfeit.mp3')
+    forfeitAudioRef.current = new Audio(`/sound/forfeit.mp3?v=${Date.now()}`)
     forfeitAudioRef.current.volume = 0.5
     newFloorAudioRef.current = new Audio('/sound/cardflip.mp3')
     
@@ -768,6 +770,12 @@ const Game = () => {
   
   // Battle system functions
   const initiateBattleTransition = (npc) => {
+    // Play battle start sound during transition
+    if (battleStartAudioRef.current) {
+      battleStartAudioRef.current.currentTime = 0
+      battleStartAudioRef.current.play().catch(e => console.log('Battle start audio error:', e))
+    }
+    
     // Start the transition effect
     setBattleTransition(true)
     setPendingBattle(npc)
@@ -828,18 +836,10 @@ const Game = () => {
     setBattleLog([isBoss ? `Boss Battle: ${npc.bossData.name}!` : 'Battle started!'])
     setBattleMenu('main')
     
-    // Play battle start sound, then battle music
-    if (battleStartAudioRef.current) {
-      battleStartAudioRef.current.currentTime = 0
-      battleStartAudioRef.current.play().catch(e => console.log('Battle start audio error:', e))
-      
-      // Start battle music after battle start sound finishes
-      battleStartAudioRef.current.onended = () => {
-        if (battleMusicAudioRef.current) {
-          battleMusicAudioRef.current.currentTime = 0
-          battleMusicAudioRef.current.play().catch(e => console.log('Battle music error:', e))
-        }
-      }
+    // Play battle music (battle start sound already played during transition)
+    if (battleMusicAudioRef.current) {
+      battleMusicAudioRef.current.currentTime = 0
+      battleMusicAudioRef.current.play().catch(e => console.log('Battle music error:', e))
     }
   }
   
