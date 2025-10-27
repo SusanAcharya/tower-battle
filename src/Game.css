@@ -3295,4 +3295,55 @@
     0 4px 10px rgba(255, 140, 60, 0.5);
 }
 
+/* Battle Transition Effect */
+.battle-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20000;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.battle-transition-overlay.active {
+  animation: battleTransitionFade 2s ease-in-out forwards;
+}
+
+@keyframes battleTransitionFade {
+  0% {
+    background: rgba(0, 0, 0, 0);
+  }
+  50% {
+    background: rgba(0, 0, 0, 0.5);
+  }
+  100% {
+    background: rgba(0, 0, 0, 1);
+  }
+}
+
+/* Zoom effect on game screen during transition */
+.game-screen.battle-transition-zoom {
+  animation: battleTransitionZoom 2s ease-in-out forwards;
+}
+
+@keyframes battleTransitionZoom {
+  0% {
+    transform: scale(1);
+    filter: blur(0px);
+  }
+  50% {
+    transform: scale(1.15);
+    filter: blur(1px);
+  }
+  100% {
+    transform: scale(1.3);
+    filter: blur(3px);
+  }
+}
+
 

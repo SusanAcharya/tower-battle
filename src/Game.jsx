@@ -311,6 +311,8 @@ const Game = () => {
   const [showInventory, setShowInventory] = useState(false)
   const [coins, setCoins] = useState(50)
   const [purchaseConfirm, setPurchaseConfirm] = useState({ show: false, message: '', type: 'success' })
+  const [battleTransition, setBattleTransition] = useState(false)
+  const [pendingBattle, setPendingBattle] = useState(null) // Store NPC to battle after transition
   
   // Inventory system - 50 units total, 5 per item = 10 slots
   const [inventory, setInventory] = useState({
@@ -758,6 +760,19 @@ const Game = () => {
   }
   
   // Battle system functions
+  const initiateBattleTransition = (npc) => {
+    // Start the transition effect
+    setBattleTransition(true)
+    setPendingBattle(npc)
+    
+    // After 2 seconds (transition duration), start the actual battle
+    setTimeout(() => {
+      startBattle(npc)
+      setBattleTransition(false)
+      setPendingBattle(null)
+    }, 2000)
+  }
+  
   const startBattle = (npc) => {
     const isBoss = npc.isBoss
     const maxHp = isBoss ? npc.bossData.hp : 100
@@ -1475,8 +1490,8 @@ const Game = () => {
               currentIndex: 0
             })
           } else {
-            // Regular NPC, start battle immediately
-            startBattle(nearbyNPC)
+            // Regular NPC, start battle with transition
+            initiateBattleTransition(nearbyNPC)
           }
         }
       }
@@ -1503,10 +1518,10 @@ const Game = () => {
               currentIndex: prev.currentIndex + 1
             }))
           } else {
-            // End dialogue and start battle
+            // End dialogue and start battle with transition
             const boss = bossDialogue.boss
             setBossDialogue(null)
-            startBattle(boss)
+            initiateBattleTransition(boss)
           }
           return
         }
@@ -2054,7 +2069,7 @@ const Game = () => {
         <p className="controls">Controls: WASD/Arrow Keys to move, Space to jump, E to interact | S for Shop, Tab for Inventory</p>
       </div>
       
-      <div className="game-screen">
+      <div className={`game-screen ${battleTransition ? 'battle-transition-zoom' : ''}`}>
         <div 
           className="game-world" 
           style={{ transform: `translateY(${cameraY}px)` }}
@@ -2245,14 +2260,14 @@ const Game = () => {
               e.preventDefault()
               const nearbyNPC = npcs.find(npc => canInteractWithNPC(npc))
               if (nearbyNPC) {
-                startBattle(nearbyNPC)
+                initiateBattleTransition(nearbyNPC)
               }
             }}
             onClick={(e) => {
               e.preventDefault()
               const nearbyNPC = npcs.find(npc => canInteractWithNPC(npc))
               if (nearbyNPC) {
-                startBattle(nearbyNPC)
+                initiateBattleTransition(nearbyNPC)
               }
             }}
           >
@@ -2429,6 +2444,26 @@ const Game = () => {
             >
               OK
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Battle Transition Overlay */}
+      {battleTransition && (
+        <div className={`battle-transition-overlay ${battleTransition ? 'active' : ''}`}>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: '48px',
+            color: '#ff8c3c',
+            fontFamily: 'Audiowide, sans-serif',
+            textShadow: '3px 3px 0px #000, 0 0 25px rgba(255, 140, 60, 1)',
+            animation: 'fadeIn 1s ease-in-out',
+            zIndex: 20001
+          }}>
+            BATTLE START
           </div>
         </div>
       )}
