@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+
 .game-container {
   display: flex;
   flex-direction: column;
@@ -11,6 +13,51 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Custom Cyberpunk Scrollbar Theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ff8c3c #0a1520;
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #0a1520 0%, #1a2a3a 100%);
+  border: 1px solid #2a4a5a;
+  border-radius: 6px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff8c3c 0%, #ff6b1c 100%);
+  border: 2px solid #0a1520;
+  border-radius: 6px;
+  box-shadow: 
+    0 0 10px rgba(255, 140, 60, 0.6),
+    inset 0 0 5px rgba(255, 200, 100, 0.4);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ffaa5c 0%, #ff8c3c 100%);
+  box-shadow: 
+    0 0 15px rgba(255, 140, 60, 0.9),
+    inset 0 0 8px rgba(255, 200, 100, 0.6);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #ff6b1c 0%, #ff4500 100%);
+  box-shadow: 
+    0 0 20px rgba(255, 140, 60, 1),
+    inset 0 0 10px rgba(255, 100, 0, 0.8);
+}
+
+*::-webkit-scrollbar-corner {
+  background: #0a1520;
 }
 
 .game-info {
@@ -33,7 +80,7 @@
   text-shadow: 3px 3px 0px #000, 
                0 0 25px rgba(255, 140, 60, 1),
                0 0 40px rgba(78, 207, 239, 0.5);
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   letter-spacing: 4px;
   text-transform: uppercase;
 }
@@ -119,7 +166,7 @@
   padding: 6px 12px;
   border: 2px solid #2a4a5a;
   border-left: 3px solid #ff8c3c;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   letter-spacing: 2px;
 }
 
@@ -210,7 +257,7 @@
   color: #ff8c3c;
   font-size: 18px;
   font-weight: bold;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   padding: 0;
   border: none;
   animation: bounce-prompt 0.6s ease-in-out infinite;
@@ -263,7 +310,7 @@
   border-top: 4px solid #4ecfef;
   font-size: 48px;
   font-weight: bold;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   text-shadow: 4px 4px 0px #000, 
                0 0 30px rgba(255, 140, 60, 1),
                0 0 50px rgba(78, 207, 239, 0.6);
@@ -432,7 +479,7 @@
 }
 
 .boss-name-text {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 48px;
   color: #ff8c3c;
   text-shadow: 
@@ -444,7 +491,7 @@
 }
 
 .boss-title {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 20px;
   color: #4ecfef;
   text-shadow: 2px 2px 0px #000, 0 0 10px rgba(78, 207, 239, 0.8);
@@ -470,7 +517,7 @@
 }
 
 .dialogue-text {
-  font-family: Arial, sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 28px;
   color: #ffffff;
   line-height: 1.6;
@@ -494,7 +541,7 @@
   position: absolute;
   top: 15px;
   right: 20px;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 16px;
   color: #4ecfef;
   text-shadow: 1px 1px 0px #000;
@@ -508,7 +555,7 @@
   position: absolute;
   bottom: 20px;
   right: 30px;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 18px;
   color: #ff8c3c;
   text-shadow: 2px 2px 0px #000, 0 0 10px rgba(255, 140, 60, 0.8);
@@ -549,7 +596,7 @@
   border: 3px solid #000;
   border-radius: 8px;
   padding: 10px 20px;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
@@ -574,7 +621,7 @@
 
 .battle-log-title {
   color: #ffcc00;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 12px;
@@ -594,26 +641,35 @@
 }
 
 .battle-log-messages::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .battle-log-messages::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(10, 21, 32, 0.8) 0%, rgba(26, 42, 58, 0.8) 100%);
+  border: 1px solid rgba(78, 207, 239, 0.3);
+  border-radius: 4px;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7);
 }
 
 .battle-log-messages::-webkit-scrollbar-thumb {
-  background: #ffcc00;
-  border-radius: 3px;
+  background: linear-gradient(180deg, #4ecfef 0%, #2a9fbf 100%);
+  border: 1px solid rgba(10, 21, 32, 0.5);
+  border-radius: 4px;
+  box-shadow: 
+    0 0 8px rgba(78, 207, 239, 0.5),
+    inset 0 0 4px rgba(150, 220, 255, 0.4);
 }
 
 .battle-log-messages::-webkit-scrollbar-thumb:hover {
-  background: #ffd700;
+  background: linear-gradient(180deg, #6edcff 0%, #4ecfef 100%);
+  box-shadow: 
+    0 0 12px rgba(78, 207, 239, 0.8),
+    inset 0 0 6px rgba(150, 220, 255, 0.6);
 }
 
 .battle-log-message {
   color: #ffffff;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   font-size: 13px;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.1);
@@ -696,7 +752,7 @@
   padding: 12px 16px;
   min-width: 240px;
   box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
 }
 
 .pokemon-info-box.enemy {
@@ -796,7 +852,7 @@
   border-radius: 12px;
   padding: 20px 24px;
   box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   min-height: 120px;
   display: flex;
   flex-direction: column;
@@ -847,7 +903,7 @@
   padding: 20px;
   font-size: 20px;
   font-weight: bold;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   color: #000;
   cursor: pointer;
   transition: all 0.1s ease;
@@ -1145,7 +1201,7 @@
 }
 
 .dice-number-display {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 100px;
   font-weight: bold;
   color: #ffffff;
@@ -1201,7 +1257,7 @@
   position: fixed;
   font-size: 64px;
   font-weight: bold;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   text-shadow: 4px 4px 0px #000;
   z-index: 1500;
   animation: damageFloat 1s ease-out forwards;
@@ -1273,7 +1329,7 @@
   color: white;
   font-size: 24px;
   font-weight: bold;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   cursor: pointer;
   touch-action: none;
   user-select: none;
@@ -1759,7 +1815,7 @@
 
 .inventory-header h3 {
   margin: 0;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   font-size: 20px;
   color: #000;
 }
@@ -1829,7 +1885,7 @@
 .item-name {
   font-size: 16px;
   font-weight: bold;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
 }
 
 .item-count {
@@ -1842,7 +1898,7 @@
 .item-effect {
   font-size: 12px;
   color: #333;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   line-height: 1.3;
 }
 
@@ -2093,7 +2149,7 @@
 }
 
 .sf-name-label {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 20px;
   color: #ffffff;
   text-shadow: 3px 3px 0px #000, 0 0 10px rgba(255, 255, 255, 0.5);
@@ -2143,7 +2199,7 @@
 }
 
 .sf-hp-text {
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   font-size: 14px;
   font-weight: bold;
   color: #ffffff;
@@ -2164,7 +2220,7 @@
 }
 
 .sf-round-text {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 18px;
   color: #ffffff;
   text-shadow: 3px 3px 0px #000, 0 0 10px rgba(255, 255, 255, 0.8);
@@ -2172,7 +2228,7 @@
 }
 
 .sf-turn-indicator {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 22px;
   padding: 8px 20px;
   border-radius: 8px;
@@ -2352,7 +2408,7 @@
 }
 
 .fighting-btn .btn-label {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 20px;
   color: #ffffff;
   text-shadow: 2px 2px 0px #000;
@@ -2425,13 +2481,19 @@
   filter: brightness(0.9);
 }
 
+.fighting-btn-small:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(50%);
+}
+
 .fighting-btn-small .btn-icon-small {
   font-size: 32px;
   filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
 }
 
 .fighting-btn-small .btn-label-small {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 14px;
   color: #ffffff;
   text-shadow: 2px 2px 0px #000;
@@ -2449,7 +2511,7 @@
 
 /* Button Label Text */
 .btn-label-text {
-  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 14px;
   font-weight: bold;
   color: #ffffff;
@@ -2468,7 +2530,7 @@
   top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 18px;
   font-weight: bold;
   color: #44ffd6;
@@ -2476,7 +2538,7 @@
 }
 
 .btn-keybind-forfeit {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 12px;
   font-weight: bold;
   color: #ff8c3c;
@@ -2529,7 +2591,7 @@
 }
 
 .forfeit-confirm-title {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 32px;
   color: #ff8c3c;
   text-align: center;
@@ -2541,7 +2603,7 @@
 }
 
 .forfeit-confirm-text {
-  font-family: Arial, sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 18px;
   color: #ffffff;
   text-align: center;
@@ -2557,7 +2619,7 @@
 }
 
 .forfeit-confirm-btn {
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 18px;
   font-weight: bold;
   padding: 12px 30px;
@@ -2603,7 +2665,290 @@
   box-shadow: 0 2px 0px #000, 0 4px 10px rgba(78, 207, 239, 0.6);
 }
 
-/* Button-specific styles removed - using image buttons now */
+/* Shop & Inventory Overlays */
+.shop-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.shop-container {
+  background: linear-gradient(135deg, #0a1520 0%, #1a2a3a 100%);
+  border: 4px solid #ff8c3c;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 1000px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 
+    0 0 40px rgba(255, 140, 60, 0.8),
+    0 0 80px rgba(78, 207, 239, 0.4),
+    inset 0 0 60px rgba(0, 0, 0, 0.7);
+}
+
+.shop-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: linear-gradient(135deg, #cc0000 0%, #ff3333 100%);
+  color: white;
+  border: 3px solid #000;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: bold;
+  box-shadow: 0 4px 0px #000, 0 6px 15px rgba(204, 0, 0, 0.6);
+}
+
+.shop-close-btn:hover {
+  background: linear-gradient(135deg, #ff0000 0%, #ff6666 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0px #000, 0 8px 20px rgba(255, 0, 0, 0.7);
+}
+
+.shop-title {
+  font-family: 'Audiowide', sans-serif;
+  font-size: 36px;
+  color: #ff8c3c;
+  text-align: center;
+  text-shadow: 
+    3px 3px 0px #000,
+    0 0 20px rgba(255, 140, 60, 1);
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+}
+
+.shop-coins-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Audiowide', sans-serif;
+  font-size: 24px;
+  color: #4ecfef;
+  text-shadow: 2px 2px 0px #000;
+  margin-bottom: 30px;
+}
+
+.coin-icon-large {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.coin-icon-small {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+
+.shop-content {
+  display: flex;
+  gap: 30px;
+}
+
+.shop-items-section {
+  flex: 2;
+}
+
+.shop-merchant-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.shop-merchant-img {
+  width: 100%;
+  max-width: 250px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 20px rgba(255, 140, 60, 0.6));
+}
+
+.merchant-dialogue {
+  font-family: 'Audiowide', sans-serif;
+  font-size: 16px;
+  color: #ffffff;
+  text-align: center;
+  font-style: italic;
+  line-height: 1.6;
+  text-shadow: 2px 2px 0px #000;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  border: 2px solid #2a4a5a;
+  border-radius: 8px;
+}
+
+.shop-items-grid {
+  display: flex;
+  gap: 30px;
+}
+
+.shop-category {
+  flex: 1;
+}
+
+.shop-category h3 {
+  font-family: 'Audiowide', sans-serif;
+  font-size: 24px;
+  color: #4ecfef;
+  text-shadow: 2px 2px 0px #000;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid #2a4a5a;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shop-item:hover {
+  background: rgba(42, 74, 90, 0.3);
+  border-color: #4ecfef;
+  transform: translateX(5px);
+  box-shadow: 0 0 15px rgba(78, 207, 239, 0.5);
+}
+
+.shop-item-img {
+  width: 50px;
+  height: 50px;
+  image-rendering: pixelated;
+}
+
+.shop-item-icon {
+  width: 50px;
+  height: 50px;
+  border: 2px solid #000;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.item-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+}
+
+.shop-item-info {
+  flex: 1;
+}
+
+.shop-item-name {
+  font-family: 'Audiowide', sans-serif;
+  font-size: 16px;
+  color: #ffffff;
+  text-shadow: 2px 2px 0px #000;
+  margin-bottom: 5px;
+}
+
+.shop-item-price {
+  font-family: 'Audiowide', sans-serif;
+  font-size: 14px;
+  color: #ffcc00;
+  text-shadow: 1px 1px 0px #000;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Inventory Styles */
+.inventory-content {
+  width: 100%;
+}
+
+.inventory-grid-full {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.inventory-item {
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid #2a4a5a;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.inventory-item:hover {
+  border-color: #4ecfef;
+  box-shadow: 0 0 15px rgba(78, 207, 239, 0.5);
+}
+
+.inventory-item-icon {
+  width: 60px;
+  height: 60px;
+  border: 2px solid #000;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.inventory-item-name {
+  font-family: 'Audiowide', sans-serif;
+  font-size: 16px;
+  color: #ffffff;
+  text-shadow: 2px 2px 0px #000;
+  text-align: center;
+}
+
+.inventory-item-count {
+  font-family: 'Audiowide', sans-serif;
+  font-size: 20px;
+  color: #ffcc00;
+  text-shadow: 1px 1px 0px #000;
+}
+
+.inventory-item-desc {
+  font-family: 'Audiowide', sans-serif;
+  font-size: 12px;
+  color: #4ecfef;
+  text-align: center;
+  line-height: 1.4;
+}
 
 /* Pokemon-Style Items Menu */
 .pokemon-items-menu {
@@ -2649,7 +2994,7 @@
   border: 3px solid #000;
   border-radius: 8px;
   padding: 10px 15px;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   font-size: 14px;
   font-weight: bold;
   color: white;
@@ -2675,7 +3020,7 @@
   border: 3px solid #2a4a6a;
   border-radius: 8px;
   padding: 15px;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 20px;
   color: #2a4a6a;
   text-align: center;
@@ -2707,7 +3052,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 6px;
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
 }
 
 .item-row-pokemon:hover:not(.disabled) {
@@ -2782,7 +3127,7 @@
 }
 
 .item-desc-text {
-  font-family: 'Courier New', monospace;
+  font-family: 'Audiowide', sans-serif;
   font-size: 14px;
   color: #000;
   margin-bottom: 15px;
@@ -2801,7 +3146,7 @@
   padding: 12px 24px;
   border: 3px solid #000;
   border-radius: 8px;
-  font-family: 'Impact', sans-serif;
+  font-family: 'Audiowide', sans-serif;
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
@@ -2838,6 +3183,116 @@
 
 .item-action-btn.cancel-btn:hover {
   background: linear-gradient(135deg, #ff6666 0%, #ff0000 100%);
+}
+
+/* Purchase Confirmation Modal */
+.purchase-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 11000;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.purchase-confirm-box {
+  background: linear-gradient(135deg, #0a1520 0%, #1a2a3a 100%);
+  border: 3px solid #ff8c3c;
+  border-radius: 10px;
+  padding: 30px 40px;
+  min-width: 300px;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 
+    0 0 40px rgba(255, 140, 60, 0.8),
+    0 0 80px rgba(78, 207, 239, 0.4),
+    inset 0 0 60px rgba(0, 0, 0, 0.7);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.purchase-confirm-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: bold;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.purchase-confirm-icon.success {
+  background: linear-gradient(135deg, #44ff44 0%, #00cc00 100%);
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.purchase-confirm-icon.error {
+  background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.purchase-confirm-message {
+  color: #fff;
+  font-family: 'Audiowide', sans-serif;
+  font-size: 20px;
+  margin-bottom: 25px;
+  text-shadow: 
+    2px 2px 0px #000,
+    -1px -1px 0px #000,
+    1px -1px 0px #000,
+    -1px 1px 0px #000;
+  line-height: 1.4;
+}
+
+.purchase-confirm-btn {
+  background: linear-gradient(135deg, #ff8c3c 0%, #ff6b1c 100%);
+  color: white;
+  border: 2px solid #ffaa5c;
+  border-radius: 8px;
+  padding: 12px 40px;
+  font-family: 'Audiowide', sans-serif;
+  font-size: 18px;
+  cursor: pointer;
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    0 4px 0px #cc4400,
+    0 6px 15px rgba(255, 140, 60, 0.5);
+  transition: all 0.2s ease;
+}
+
+.purchase-confirm-btn:hover {
+  background: linear-gradient(135deg, #ffaa5c 0%, #ff8c3c 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 0px #cc4400,
+    0 8px 20px rgba(255, 140, 60, 0.7);
+}
+
+.purchase-confirm-btn:active {
+  transform: translateY(2px);
+  box-shadow: 
+    0 2px 0px #cc4400,
+    0 4px 10px rgba(255, 140, 60, 0.5);
 }
 
 

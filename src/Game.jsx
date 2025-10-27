@@ -261,6 +261,28 @@ const DicePairContainer = ({ rolls, type, rolling, animationId }) => {
   )
 }
 
+// Helper function to get item icon image path based on item type
+const getItemIcon = (itemId) => {
+  const iconMap = {
+    fireOil: '/icons/fire.png',
+    poisonVial: '/icons/posion-vial.png', // Note: typo in filename
+    acidFlask: '/icons/acid-flask.png',
+    lightningShard: '/icons/lightning-shard.png',
+    iceBomb: '/icons/ice-bomb.png',
+    shadowEssence: '/icons/shadow-essence.png',
+    steelPlating: '/icons/steel-plating.png',
+    iceCharm: '/icons/ice-charm.png',
+    smokeBomb: '/icons/smoke-bomb.png',
+    frostBarrier: '/icons/frost-barrier.png',
+    mirrorCrystal: '/icons/mirror-crystal.png',
+    medkit: '/icons/medkit.png',
+    bandages: '/icons/bandage.png',
+    antibiotics: '/icons/antibiotic.png',
+    shieldPotion: '/icons/frost-barrier.png' // Fallback to similar icon
+  }
+  return iconMap[itemId] || '/icons/mirror-crystal.png' // Default fallback
+}
+
 const Game = () => {
   // Start player at 200px instead of center for mobile visibility
   const [player, setPlayer] = useState({
@@ -285,6 +307,10 @@ const Game = () => {
   const [selectedItemForInfo, setSelectedItemForInfo] = useState(null) // For Pokemon-style item menu
   const [bossDialogue, setBossDialogue] = useState(null) // { boss, dialogues, currentIndex }
   const [showForfeitConfirm, setShowForfeitConfirm] = useState(false)
+  const [showShop, setShowShop] = useState(false)
+  const [showInventory, setShowInventory] = useState(false)
+  const [coins, setCoins] = useState(50)
+  const [purchaseConfirm, setPurchaseConfirm] = useState({ show: false, message: '', type: 'success' })
   
   // Inventory system - 50 units total, 5 per item = 10 slots
   const [inventory, setInventory] = useState({
@@ -747,6 +773,7 @@ const Game = () => {
       bossData: isBoss ? npc.bossData : null,
       bossPhase: 'normal', // 'normal', 'phase50', 'phase20'
       selectedItem: null,
+      healsRemaining: 5, // Total heals available for both player and opponent
       diceAvailable: {
         chaos: 1,
         randomEvent: 1
@@ -999,9 +1026,19 @@ const Game = () => {
       }, ROLL_ANIM_MS + 1500)
       return
     } else if (type === 'heal') {
+      // Check if heals are still available
+      if (newState.healsRemaining <= 0) {
+        log.push('No heals remaining!')
+        setBattleLog(log)
+        return
+      }
+      
       const diceCount = newState.effects.playerTripleDice ? 3 : 2
       const rolls = Array.from({ length: diceCount }, rollDice)
       const heal = rolls.reduce((a, b) => a + b, 0)
+      
+      // Decrement heals remaining
+      newState.healsRemaining -= 1
       
       // Start rolling animation - both dice roll simultaneously
       playDiceRollSound()
@@ -1019,7 +1056,7 @@ const Game = () => {
       // After showing results, apply heal and continue
       setTimeout(() => {
         newState.playerHp = Math.min(100, newState.playerHp + heal)
-        log.push(`You rolled ${rolls.join(', ')} = ${heal} HP healed!`)
+        log.push(`You rolled ${rolls.join(', ')} = ${heal} HP healed! (${newState.healsRemaining} heals left)`)
         newState.effects.playerTripleDice = false
         continueBattleAfterAction(newState, log)
       }, ROLL_ANIM_MS + 1500)
@@ -1167,8 +1204,63 @@ const Game = () => {
     setTimeout(() => npcTurn(newState, log), 1500)
   }
   
+  // Helper to finish NPC turn - apply DoT effects and check game state
+  const finishNpcTurn = (state, log) => {
+    let newState = { ...state }
+    
+    // Apply DoT effects to enemy
+    if (newState.activeEffects.enemyBurn > 0) {
+      const burnDmg = 5
+      newState.npcHp = Math.max(0, newState.npcHp - burnDmg)
+      log.push(`${newState.isBoss ? newState.bossData.name : 'Enemy'} takes ${burnDmg} burn damage`)
+      newState.activeEffects.enemyBurn--
+    }
+    if (newState.activeEffects.enemyPoison > 0) {
+      const poisonDmg = 3
+      newState.npcHp = Math.max(0, newState.npcHp - poisonDmg)
+      log.push(`${newState.isBoss ? newState.bossData.name : 'Enemy'} takes ${poisonDmg} poison damage`)
+      newState.activeEffects.enemyPoison--
+    }
+    if (newState.activeEffects.enemyArmorReduction > 0) {
+      newState.activeEffects.enemyArmorReduction--
+    }
+    
+    // Clear dice animation
+    setDiceAnimation(null)
+    setTimeout(() => setDamageAnimation(null), 1000)
+    
+    // Check loss
+    if (newState.playerHp <= 0) {
+      log.push('Defeat... Try again!')
+      setBattleLog(log)
+      
+      // Stop battle music and play defeat sounds
+      if (battleMusicAudioRef.current) {
+        battleMusicAudioRef.current.pause()
+        battleMusicAudioRef.current.currentTime = 0
+      }
+      playDefeatSound()
+      playAudienceBoo()
+      
+      setTimeout(() => {
+        setBattleState(null)
+        setBattleLog([])
+      }, 2000)
+      return
+    }
+    
+    newState.turn = 'player'
+    setBattleState(newState)
+    setBattleLog(log)
+  }
+  
   const npcTurn = (state, log) => {
     let newState = { ...state }
+    const ROLL_ANIM_MS = 1000
+    
+    // Generate unique animation ID for this roll
+    diceAnimationIdRef.current += 1
+    const animId = diceAnimationIdRef.current
     
     // Check freeze/stun
     if (newState.effects.npcSkipNext || newState.activeEffects.enemyFreeze) {
@@ -1232,18 +1324,38 @@ const Game = () => {
         const hpThreshold = newState.isBoss ? 50 : 30
         const shouldHeal = newState.npcHp < hpThreshold || Math.random() < 0.3
         
-        if (shouldHeal && newState.npcHp < newState.npcMaxHp - 10) {
+        if (shouldHeal && newState.npcHp < newState.npcMaxHp - 10 && newState.healsRemaining > 0) {
           const diceCount = newState.effects.npcTripleDice ? 3 : 2
           const rolls = Array.from({ length: diceCount }, rollDice)
           const heal = rolls.reduce((a, b) => a + b, 0)
-          newState.npcHp = Math.min(newState.npcMaxHp, newState.npcHp + heal)
-          log.push(`${newState.isBoss ? newState.bossData.name : 'Enemy'} healed for ${heal} HP`)
-          newState.effects.npcTripleDice = false
-          playHealSound()
+          
+          // Decrement heals remaining
+          newState.healsRemaining -= 1
+          
+          // Show dice animation
+          playDiceRollSound()
+          setDiceAnimation({ type: 'heal', rolls, rolling: true, id: animId })
+          
+          setTimeout(() => {
+            setDiceAnimation({ type: 'heal', rolls, rolling: false, id: animId })
+            playDiceResultSound()
+            playHealFinishSound()
+            playHealSound()
+            setDamageAnimation({ target: 'npc', value: `+${heal}`, isHeal: true })
+          }, ROLL_ANIM_MS)
+          
+          setTimeout(() => {
+            newState.npcHp = Math.min(newState.npcMaxHp, newState.npcHp + heal)
+            log.push(`${newState.isBoss ? newState.bossData.name : 'Enemy'} rolled ${rolls.join(', ')} = ${heal} HP healed! (${newState.healsRemaining} heals left)`)
+            newState.effects.npcTripleDice = false
+            finishNpcTurn(newState, log)
+          }, ROLL_ANIM_MS + 1500)
+          return
         } else {
           const diceCount = newState.effects.npcTripleDice ? 3 : 2
           const rolls = Array.from({ length: diceCount }, rollDice)
-          let damage = rolls.reduce((a, b) => a + b, 0)
+          let baseDamage = rolls.reduce((a, b) => a + b, 0)
+          let damage = baseDamage
           
           // Boss phase multiplier
           if (newState.isBoss) {
@@ -1256,79 +1368,73 @@ const Game = () => {
             damage = Math.floor(damage * multiplier)
           }
           
-          // Apply player defenses
-          if (newState.activeEffects.playerDodge) {
-            log.push('Enemy attacks! You dodged it!')
-            newState.activeEffects.playerDodge = false
-            damage = 0
-          } else if (newState.activeEffects.playerShield > 0) {
-            const reduction = newState.activeEffects.playerShield / 100
-            const originalDamage = damage
-            damage = Math.floor(damage * (1 - reduction))
-            log.push(`Enemy attacks! Shield reduces ${originalDamage} to ${damage} damage!`)
+          // Show dice animation
+          playDiceRollSound()
+          setDiceAnimation({ type: 'attack', rolls, rolling: true, id: animId })
+          
+          setTimeout(() => {
+            setDiceAnimation({ type: 'attack', rolls, rolling: false, id: animId })
+            playDiceResultSound()
+            playAttackFinishSound()
             
-            // Reflect damage if active
-            if (newState.activeEffects.playerReflect > 0) {
-              const reflected = Math.floor(originalDamage * (newState.activeEffects.playerReflect / 100))
-              newState.npcHp = Math.max(0, newState.npcHp - reflected)
-              log.push(`Reflected ${reflected} damage back!`)
+            // Apply player defenses
+            let finalDamage = damage
+            if (newState.activeEffects.playerDodge) {
+              newState.activeEffects.playerDodge = false
+              finalDamage = 0
+            } else if (newState.activeEffects.playerShield > 0) {
+              const reduction = newState.activeEffects.playerShield / 100
+              finalDamage = Math.floor(damage * (1 - reduction))
+              
+              // Reflect damage if active
+              if (newState.activeEffects.playerReflect > 0) {
+                const reflected = Math.floor(damage * (newState.activeEffects.playerReflect / 100))
+                newState.npcHp = Math.max(0, newState.npcHp - reflected)
+              }
             }
-          }
+            
+            if (finalDamage > 0) {
+              playAttackHitSound()
+              setTimeout(() => playHurtSound(), 100)
+              setDamageAnimation({ target: 'player', value: finalDamage })
+            }
+          }, ROLL_ANIM_MS)
           
-          newState.playerHp = Math.max(0, newState.playerHp - damage)
-          if (damage > 0) {
-            log.push(`${newState.isBoss ? newState.bossData.name : 'Enemy'} attacks for ${damage} damage!`)
-          }
-          newState.effects.npcTripleDice = false
-          
-          if (damage > 0) {
-            playAttackHitSound()
-            setTimeout(() => playHurtSound(), 100)
-          }
+          setTimeout(() => {
+            // Apply player defenses (recalculate for log)
+            let finalDamage = damage
+            if (newState.activeEffects.playerDodge) {
+              log.push('Enemy attacks! You dodged it!')
+              newState.activeEffects.playerDodge = false
+              finalDamage = 0
+            } else if (newState.activeEffects.playerShield > 0) {
+              const reduction = newState.activeEffects.playerShield / 100
+              const originalDamage = damage
+              finalDamage = Math.floor(damage * (1 - reduction))
+              log.push(`Enemy rolled ${rolls.join(', ')} = ${baseDamage}${newState.isBoss && baseDamage !== damage ? ` (×${(damage/baseDamage).toFixed(1)} boss multiplier = ${damage})` : ''}`)
+              log.push(`Shield reduces ${originalDamage} to ${finalDamage} damage!`)
+              
+              // Reflect damage if active
+              if (newState.activeEffects.playerReflect > 0) {
+                const reflected = Math.floor(originalDamage * (newState.activeEffects.playerReflect / 100))
+                newState.npcHp = Math.max(0, newState.npcHp - reflected)
+                log.push(`Reflected ${reflected} damage back!`)
+              }
+            } else {
+              log.push(`${newState.isBoss ? newState.bossData.name : 'Enemy'} rolled ${rolls.join(', ')} = ${baseDamage}${newState.isBoss && baseDamage !== damage ? ` (×${(damage/baseDamage).toFixed(1)} boss multiplier = ${damage})` : ''} damage!`)
+            }
+            
+            newState.playerHp = Math.max(0, newState.playerHp - finalDamage)
+            newState.effects.npcTripleDice = false
+            finishNpcTurn(newState, log)
+          }, ROLL_ANIM_MS + 1500)
+          return
         }
       }
     }
     
-    // Apply DoT effects to enemy
-    if (newState.activeEffects.enemyBurn > 0) {
-      const burnDmg = 5
-      newState.npcHp = Math.max(0, newState.npcHp - burnDmg)
-      log.push(`${newState.isBoss ? newState.bossData.name : 'Enemy'} takes ${burnDmg} burn damage`)
-      newState.activeEffects.enemyBurn--
-    }
-    if (newState.activeEffects.enemyPoison > 0) {
-      const poisonDmg = 3
-      newState.npcHp = Math.max(0, newState.npcHp - poisonDmg)
-      log.push(`${newState.isBoss ? newState.bossData.name : 'Enemy'} takes ${poisonDmg} poison damage`)
-      newState.activeEffects.enemyPoison--
-    }
-    if (newState.activeEffects.enemyArmorReduction > 0) {
-      newState.activeEffects.enemyArmorReduction--
-    }
-    
-    // Check loss
-    if (newState.playerHp <= 0) {
-      log.push('Defeat... Try again!')
-      setBattleLog(log)
-      
-      // Stop battle music and play defeat sounds
-      if (battleMusicAudioRef.current) {
-        battleMusicAudioRef.current.pause()
-        battleMusicAudioRef.current.currentTime = 0
-      }
-      playDefeatSound()
-      playAudienceBoo()
-      
-      setTimeout(() => {
-        setBattleState(null)
-        setBattleLog([])
-      }, 2000)
-      return
-    }
-    
-    newState.turn = 'player'
-    setBattleState(newState)
-    setBattleLog(log)
+    // Finish turn (for cases without dice animations like stun/skip and signature moves)
+    finishNpcTurn(newState, log)
   }
 
   // Keyboard handling
@@ -1344,7 +1450,21 @@ const Game = () => {
       keysPressed.current[e.key.toLowerCase()] = true
       
       // E key for interaction (only during exploration)
-      if ((e.key === 'e' || e.key === 'E') && !battleState && !bossDialogue) {
+      if ((e.key === 'e' || e.key === 'E') && !battleState && !bossDialogue && !showShop && !showInventory) {
+        // Check if near shop
+        if (currentFloor === 0) {
+          const shopX = 750
+          const shopY = GAME_HEIGHT - FLOOR_HEIGHT - 120
+          const distanceToShop = Math.sqrt(
+            Math.pow(player.x + PLAYER_WIDTH / 2 - (shopX + 60), 2) +
+            Math.pow(player.y + PLAYER_HEIGHT / 2 - (shopY + 60), 2)
+          )
+          if (distanceToShop < 100) {
+            setShowShop(true)
+            return
+          }
+        }
+        
         const nearbyNPC = npcs.find(npc => canInteractWithNPC(npc))
         if (nearbyNPC) {
           // If it's a boss, show dialogue first
@@ -1359,6 +1479,17 @@ const Game = () => {
             startBattle(nearbyNPC)
           }
         }
+      }
+      
+      // S key for shop (anywhere during exploration)
+      if ((e.key === 's' || e.key === 'S') && !battleState && !bossDialogue && !showShop && !showInventory) {
+        setShowShop(true)
+      }
+      
+      // Tab key for inventory
+      if (e.key === 'Tab' && !battleState && !bossDialogue && !showShop && !showInventory) {
+        e.preventDefault()
+        setShowInventory(true)
       }
       
       // Space bar for jump or advance dialogue
@@ -1842,10 +1973,15 @@ const Game = () => {
                       <img src="/buttons/attack-dice.png" alt="Attack" className="btn-icon-img" />
                       <span className="btn-label-text">ATTACK</span>
                     </button>
-                    <button className="fighting-btn-small heal-btn" onClick={() => handleDiceAction('heal')}>
+                    <button 
+                      className="fighting-btn-small heal-btn" 
+                      onClick={() => handleDiceAction('heal')}
+                      disabled={battleState.healsRemaining <= 0}
+                      style={{ opacity: battleState.healsRemaining <= 0 ? 0.5 : 1 }}
+                    >
                       <span className="btn-keybind">[ H ]</span>
                       <img src="/buttons/heal-dice.png" alt="Heal" className="btn-icon-img" />
-                      <span className="btn-label-text">HEAL</span>
+                      <span className="btn-label-text">HEAL ({battleState.healsRemaining})</span>
                     </button>
                     <button className="fighting-btn-small items-btn" onClick={() => { setBattleMenu('items'); setSelectedItemForInfo(null); }}>
                       <span className="btn-keybind">[ I ]</span>
@@ -1914,8 +2050,8 @@ const Game = () => {
     <div className="game-container">
       <div className="game-info">
         <h1>Tower Ascend</h1>
-        <p>Floor: {currentFloor} / 10</p>
-        <p className="controls">Controls: WASD/Arrow Keys to move, Space to jump, E to interact</p>
+        <p>Floor: {currentFloor} / 10 | Coins: {coins} <img src="/coin.png" alt="coin" style={{width: '20px', height: '20px', verticalAlign: 'middle'}} /></p>
+        <p className="controls">Controls: WASD/Arrow Keys to move, Space to jump, E to interact | S for Shop, Tab for Inventory</p>
       </div>
       
       <div className="game-screen">
@@ -1960,6 +2096,39 @@ const Game = () => {
           {/* Building walls */}
           <div className="building-wall left-wall"></div>
           <div className="building-wall right-wall"></div>
+
+          {/* Shop */}
+          {(() => {
+            const shopX = 750
+            const shopY = GAME_HEIGHT - FLOOR_HEIGHT - 120
+            const canInteractWithShop = currentFloor === 0 && Math.sqrt(
+              Math.pow(player.x + PLAYER_WIDTH / 2 - (shopX + 60), 2) +
+              Math.pow(player.y + PLAYER_HEIGHT / 2 - (shopY + 60), 2)
+            ) < 100
+            
+            return (
+              <div
+                className="shop-building"
+                style={{
+                  left: `${shopX}px`,
+                  top: `${shopY}px`,
+                  width: '120px',
+                  height: '120px',
+                  position: 'absolute',
+                  zIndex: 5
+                }}
+              >
+                <img 
+                  src="/shop.png" 
+                  alt="Shop"
+                  style={{ width: '100%', height: '100%', opacity: 0.9, imageRendering: 'pixelated' }}
+                />
+                {canInteractWithShop && (
+                  <div className="interact-prompt">E</div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* NPCs */}
           {npcs.map((npc) => {
@@ -2091,6 +2260,178 @@ const Game = () => {
           </button>
         </div>
       </div>
+      
+      {/* Shop Popup */}
+      {showShop && (
+        <div className="shop-overlay" onClick={() => setShowShop(false)}>
+          <div className="shop-container" onClick={(e) => e.stopPropagation()}>
+            <button className="shop-close-btn" onClick={() => setShowShop(false)}>✕</button>
+            
+            <div className="shop-content">
+              {/* Shop Items Section */}
+              <div className="shop-items-section">
+                <h2 className="shop-title">THE GRIM BARGAIN</h2>
+                <div className="shop-coins-display">
+                  <img src="/coin.png" alt="coin" className="coin-icon-large" />
+                  <span>{coins} Coins</span>
+                </div>
+                
+                <div className="shop-items-grid">
+                  {/* Dice Section */}
+                  <div className="shop-category">
+                    <h3>DICE</h3>
+                    <div className="shop-item" onClick={() => {
+                      if (coins >= 10) {
+                        setCoins(prev => prev - 10)
+                        // Note: Dice are consumed during battle, not stored in inventory
+                        setPurchaseConfirm({ 
+                          show: true, 
+                          message: 'Chaos Dice purchased! It will be available in your next battle.', 
+                          type: 'success' 
+                        })
+                      } else {
+                        setPurchaseConfirm({ 
+                          show: true, 
+                          message: 'Not enough coins!', 
+                          type: 'error' 
+                        })
+                      }
+                    }}>
+                      <img src="/buttons/chaos-dice.png" alt="Chaos Dice" className="shop-item-img" />
+                      <div className="shop-item-info">
+                        <div className="shop-item-name">Chaos Dice</div>
+                        <div className="shop-item-price">
+                          <img src="/coin.png" alt="coin" className="coin-icon-small" /> 10
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="shop-item" onClick={() => {
+                      if (coins >= 10) {
+                        setCoins(prev => prev - 10)
+                        setPurchaseConfirm({ 
+                          show: true, 
+                          message: 'Random Event Dice purchased! It will be available in your next battle.', 
+                          type: 'success' 
+                        })
+                      } else {
+                        setPurchaseConfirm({ 
+                          show: true, 
+                          message: 'Not enough coins!', 
+                          type: 'error' 
+                        })
+                      }
+                    }}>
+                      <img src="/buttons/event-dice.png" alt="Event Dice" className="shop-item-img" />
+                      <div className="shop-item-info">
+                        <div className="shop-item-name">Event Dice</div>
+                        <div className="shop-item-price">
+                          <img src="/coin.png" alt="coin" className="coin-icon-small" /> 10
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Items Section */}
+                  <div className="shop-category">
+                    <h3>ITEMS</h3>
+                    {Object.entries(ITEMS).slice(0, 6).map(([itemId, item]) => (
+                      <div key={itemId} className="shop-item" onClick={() => {
+                        const price = item.type === 'attack' ? 10 : item.type === 'utility' ? 15 : 5
+                        if (coins >= price) {
+                          setCoins(prev => prev - price)
+                          setInventory(prev => ({
+                            ...prev,
+                            [itemId]: (prev[itemId] || 0) + 1
+                          }))
+                          setPurchaseConfirm({ 
+                            show: true, 
+                            message: `${item.name} purchased successfully!`, 
+                            type: 'success' 
+                          })
+                        } else {
+                          setPurchaseConfirm({ 
+                            show: true, 
+                            message: 'Not enough coins!', 
+                            type: 'error' 
+                          })
+                        }
+                      }}>
+                        <div className="shop-item-icon" style={{ backgroundColor: item.color || '#666' }}>
+                          <img src={getItemIcon(itemId)} alt={item.name} className="item-icon-img" />
+                        </div>
+                        <div className="shop-item-info">
+                          <div className="shop-item-name">{item.name}</div>
+                          <div className="shop-item-price">
+                            <img src="/coin.png" alt="coin" className="coin-icon-small" />
+                            {item.type === 'attack' ? ' 10' : item.type === 'utility' ? ' 15' : ' 5'}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Merchant Section */}
+              <div className="shop-merchant-section">
+                <img src="/shop-merchant.png" alt="Merchant" className="shop-merchant-img" />
+                <div className="merchant-dialogue">
+                  "Welcome, traveler. My wares shall aid your ascent..."
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Inventory Popup */}
+      {showInventory && (
+        <div className="shop-overlay" onClick={() => setShowInventory(false)}>
+          <div className="shop-container" onClick={(e) => e.stopPropagation()}>
+            <button className="shop-close-btn" onClick={() => setShowInventory(false)}>✕</button>
+            
+            <div className="inventory-content">
+              <h2 className="shop-title">INVENTORY</h2>
+              <div className="shop-coins-display">
+                <img src="/coin.png" alt="coin" className="coin-icon-large" />
+                <span>{coins} Coins</span>
+              </div>
+              
+              <div className="inventory-grid-full">
+                {Object.entries(ITEMS).map(([itemId, item]) => (
+                  <div key={itemId} className="inventory-item">
+                    <div className="inventory-item-icon" style={{ backgroundColor: item.color || '#666' }}>
+                      <img src={getItemIcon(itemId)} alt={item.name} className="item-icon-img" />
+                    </div>
+                    <div className="inventory-item-name">{item.name}</div>
+                    <div className="inventory-item-count">×{inventory[itemId] || 0}</div>
+                    <div className="inventory-item-desc">{item.effect}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Confirmation Modal */}
+      {purchaseConfirm.show && (
+        <div className="purchase-confirm-overlay" onClick={() => setPurchaseConfirm({ ...purchaseConfirm, show: false })}>
+          <div className="purchase-confirm-box" onClick={(e) => e.stopPropagation()}>
+            <div className={`purchase-confirm-icon ${purchaseConfirm.type}`}>
+              {purchaseConfirm.type === 'success' ? '✓' : '✕'}
+            </div>
+            <div className="purchase-confirm-message">{purchaseConfirm.message}</div>
+            <button 
+              className="purchase-confirm-btn" 
+              onClick={() => setPurchaseConfirm({ ...purchaseConfirm, show: false })}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
