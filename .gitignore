@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Development documentation files
+battle_mach.txt
+DICE_RIV_README.md
+gami-info.txt
+RIVE_DICE_SETUP.md
+new_features.txt
+
