@@ -9,6 +9,8 @@ const PLAYER_HEIGHT = 95
 const GRAVITY = 0.6
 const JUMP_FORCE = -15
 const MOVE_SPEED = 5
+const ACCELERATION = 1.2
+const DECELERATION = 0.8
 const FLOOR_HEIGHT = 80
 const PLATFORM_HEIGHT = 20
 
@@ -252,7 +254,7 @@ const DicePairContainer = ({ rolls, type, rolling, animationId }) => {
               rolling={rolling}
               onEnd={() => {}}
               outcome={roll}
-              size={150}
+              size={200}
             />
           </div>
         ))}
@@ -312,7 +314,10 @@ const Game = () => {
   const [coins, setCoins] = useState(50)
   const [purchaseConfirm, setPurchaseConfirm] = useState({ show: false, message: '', type: 'success' })
   const [battleTransition, setBattleTransition] = useState(false)
+  const [transitionType, setTransitionType] = useState('horizontal-strips') // 'horizontal-strips', 'vertical-strips', 'circle-shrink', 'zoom-in', 'blink'
   const [pendingBattle, setPendingBattle] = useState(null) // Store NPC to battle after transition
+  const [showGuide, setShowGuide] = useState(false)
+  const [currentGuidePage, setCurrentGuidePage] = useState(1) // 1-4 pages
   
   // Inventory system - 50 units total, 5 per item = 10 slots
   const [inventory, setInventory] = useState({
@@ -775,6 +780,11 @@ const Game = () => {
       battleStartAudioRef.current.currentTime = 0
       battleStartAudioRef.current.play().catch(e => console.log('Battle start audio error:', e))
     }
+    
+    // Randomly select a transition type
+    const transitions = ['horizontal-strips', 'vertical-strips', 'circle-shrink', 'zoom-in', 'blink']
+    const randomTransition = transitions[Math.floor(Math.random() * transitions.length)]
+    setTransitionType(randomTransition)
     
     // Start the transition effect
     setBattleTransition(true)
@@ -1472,10 +1482,10 @@ const Game = () => {
       keysPressed.current[e.key.toLowerCase()] = true
       
       // E key for interaction (only during exploration)
-      if ((e.key === 'e' || e.key === 'E') && !battleState && !bossDialogue && !showShop && !showInventory) {
-        // Check if near shop
+      if ((e.key === 'e' || e.key === 'E') && !battleState && !bossDialogue && !showShop && !showInventory && !showGuide) {
+        // Check if near shop or guide on ground floor
         if (currentFloor === 0) {
-          const shopX = 750
+          const shopX = 600
           const shopY = GAME_HEIGHT - FLOOR_HEIGHT - 120
           const distanceToShop = Math.sqrt(
             Math.pow(player.x + PLAYER_WIDTH / 2 - (shopX + 60), 2) +
@@ -1483,6 +1493,19 @@ const Game = () => {
           )
           if (distanceToShop < 100) {
             setShowShop(true)
+            return
+          }
+          
+          // Check if near guider NPC (right side of shop)
+          const guideX = 850
+          const guideY = GAME_HEIGHT - FLOOR_HEIGHT - 120
+          const distanceToGuide = Math.sqrt(
+            Math.pow(player.x + PLAYER_WIDTH / 2 - (guideX + 40), 2) +
+            Math.pow(player.y + PLAYER_HEIGHT / 2 - (guideY + 60), 2)
+          )
+          if (distanceToGuide < 120) {
+            setShowGuide(true)
+            setCurrentGuidePage(1)
             return
           }
         }
@@ -1504,12 +1527,12 @@ const Game = () => {
       }
       
       // S key for shop (anywhere during exploration)
-      if ((e.key === 's' || e.key === 'S') && !battleState && !bossDialogue && !showShop && !showInventory) {
+      if ((e.key === 's' || e.key === 'S') && !battleState && !bossDialogue && !showShop && !showInventory && !showGuide) {
         setShowShop(true)
       }
       
       // Tab key for inventory
-      if (e.key === 'Tab' && !battleState && !bossDialogue && !showShop && !showInventory) {
+      if (e.key === 'Tab' && !battleState && !bossDialogue && !showShop && !showInventory && !showGuide) {
         e.preventDefault()
         setShowInventory(true)
       }
@@ -1661,27 +1684,54 @@ const Game = () => {
         let newX = prev.x
         let newY = prev.y
         let newVelocityY = prev.velocityY
-        let newVelocityX = 0
+        let newVelocityX = prev.velocityX
         let isMoving = false
         let direction = prev.direction
 
-        // Horizontal movement (WASD or Arrow keys)
-        if (keysPressed.current['a'] || keysPressed.current['arrowleft']) {
-          newVelocityX = -MOVE_SPEED
+        // Horizontal movement with smooth acceleration/deceleration
+        const isPressingLeft = keysPressed.current['a'] || keysPressed.current['arrowleft']
+        const isPressingRight = keysPressed.current['d'] || keysPressed.current['arrowright']
+        
+        if (isPressingLeft) {
+          // If moving right and pressing left, decelerate faster (for better turning)
+          if (newVelocityX > 0) {
+            newVelocityX = Math.max(newVelocityX - ACCELERATION * 1.5, -MOVE_SPEED)
+          } else {
+            // Normal left acceleration
+            newVelocityX = Math.max(newVelocityX - ACCELERATION, -MOVE_SPEED)
+          }
           isMoving = true
           direction = 'left'
-        }
-        if (keysPressed.current['d'] || keysPressed.current['arrowright']) {
-          newVelocityX = MOVE_SPEED
+        } else if (isPressingRight) {
+          // If moving left and pressing right, decelerate faster (for better turning)
+          if (newVelocityX < 0) {
+            newVelocityX = Math.min(newVelocityX + ACCELERATION * 1.5, MOVE_SPEED)
+          } else {
+            // Normal right acceleration
+            newVelocityX = Math.min(newVelocityX + ACCELERATION, MOVE_SPEED)
+          }
           isMoving = true
           direction = 'right'
+        } else {
+          // Decelerate when no keys pressed
+          if (newVelocityX > 0) {
+            newVelocityX = Math.max(0, newVelocityX - DECELERATION)
+          } else if (newVelocityX < 0) {
+            newVelocityX = Math.min(0, newVelocityX + DECELERATION)
+          }
         }
 
         newX += newVelocityX
 
         // Keep player in bounds horizontally
-        if (newX < 0) newX = 0
-        if (newX > GAME_WIDTH - PLAYER_WIDTH) newX = GAME_WIDTH - PLAYER_WIDTH
+        if (newX < 0) {
+          newX = 0
+          newVelocityX = 0
+        }
+        if (newX > GAME_WIDTH - PLAYER_WIDTH) {
+          newX = GAME_WIDTH - PLAYER_WIDTH
+          newVelocityX = 0
+        }
 
         // Apply gravity
         newVelocityY += GRAVITY
@@ -2133,7 +2183,7 @@ const Game = () => {
 
           {/* Shop */}
           {(() => {
-            const shopX = 750
+            const shopX = 600
             const shopY = GAME_HEIGHT - FLOOR_HEIGHT - 120
             const canInteractWithShop = currentFloor === 0 && Math.sqrt(
               Math.pow(player.x + PLAYER_WIDTH / 2 - (shopX + 60), 2) +
@@ -2158,6 +2208,39 @@ const Game = () => {
                   style={{ width: '100%', height: '100%', opacity: 0.9, imageRendering: 'pixelated' }}
                 />
                 {canInteractWithShop && (
+                  <div className="interact-prompt">E</div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Guider NPC */}
+          {(() => {
+            const guideX = 850
+            const guideY = GAME_HEIGHT - FLOOR_HEIGHT - 120
+            const canInteractWithGuide = currentFloor === 0 && Math.sqrt(
+              Math.pow(player.x + PLAYER_WIDTH / 2 - (guideX + 40), 2) +
+              Math.pow(player.y + PLAYER_HEIGHT / 2 - (guideY + 60), 2)
+            ) < 120
+            
+            return (
+              <div
+                className="guider-npc"
+                style={{
+                  left: `${guideX}px`,
+                  top: `${guideY}px`,
+                  width: '80px',
+                  height: '120px',
+                  position: 'absolute',
+                  zIndex: 5
+                }}
+              >
+                <img 
+                  src="/guider.png" 
+                  alt="Guider"
+                  style={{ width: '100%', height: '100%', opacity: 1, imageRendering: 'pixelated' }}
+                />
+                {canInteractWithGuide && (
                   <div className="interact-prompt">E</div>
                 )}
               </div>
@@ -2467,23 +2550,193 @@ const Game = () => {
         </div>
       )}
 
+      {/* Guide Book Popup */}
+      {showGuide && (
+        <div className="guide-overlay" onClick={() => setShowGuide(false)}>
+          <div className="guide-book-container" onClick={(e) => e.stopPropagation()}>
+            <button className="guide-close-btn" onClick={() => setShowGuide(false)}>✕</button>
+            <div className="guide-book-title">THE ADVENTURER'S GUIDE</div>
+            
+            <div className="guide-book-content">
+              {/* Page 1: Lore & Story */}
+              {currentGuidePage === 1 && (
+                <div className="guide-page">
+                  <h2 className="guide-page-title">🏰 Welcome to Tower Ascend</h2>
+                  <div className="guide-page-text">
+                    <p>
+                      <strong>The Tower of Eternal Challenge</strong> stands before you, a mysterious structure 
+                      that has existed for centuries. Each floor is guarded by powerful beings who test 
+                      the courage and skill of all who dare to climb.
+                    </p>
+                    <p>
+                      <strong>Your Quest:</strong> Ascend through 10 floors of the tower, defeating the guardians 
+                      that protect each level. At the pinnacle awaits the ultimate challenge - powerful bosses 
+                      who have never been defeated.
+                    </p>
+                    <p>
+                      <strong>The Legend:</strong> It is said that those who reach the top and defeat all bosses 
+                      will unlock unimaginable power and eternal glory. Many have tried, but few have succeeded. 
+                      Will you be the one to conquer the Tower?
+                    </p>
+                    <p className="guide-lore-quote">
+                      "Only the brave who master both dice and strategy shall reach the summit..."
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Page 2: Gameplay & Mechanics */}
+              {currentGuidePage === 2 && (
+                <div className="guide-page">
+                  <h2 className="guide-page-title">⚔️ Gameplay & Mechanics</h2>
+                  <div className="guide-page-text">
+                    <p><strong>💎 Dice System:</strong></p>
+                    <ul>
+                      <li><strong>Attack Dice:</strong> Roll 2 dice to deal damage to enemies</li>
+                      <li><strong>Heal Dice:</strong> Roll dice to restore your HP (5 heals per battle)</li>
+                      <li><strong>Chaos Dice:</strong> Unpredictable effects - use wisely!</li>
+                      <li><strong>Random Event:</strong> Trigger special events during battle</li>
+                    </ul>
+                    
+                    <p><strong>🛡️ Battle Mechanics:</strong></p>
+                    <ul>
+                      <li>Turn-based combat with dice rolls determining outcomes</li>
+                      <li>Boss battles feature multiple phases and special abilities</li>
+                      <li>Status effects: Burn, Poison, Freeze, Armor Reduction</li>
+                      <li>Elemental weaknesses and resistances affect damage</li>
+                    </ul>
+                    
+                    <p><strong>🏪 Shop & Items:</strong></p>
+                    <ul>
+                      <li><strong>Shop:</strong> Purchase dice and items with coins earned from battles</li>
+                      <li><strong>Items:</strong> Attack items (Fire, Poison, Ice), Defense items (Shields, Barriers)</li>
+                      <li><strong>Inventory:</strong> Manage your collected items and use them in battle</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+              
+              {/* Page 3: Controls */}
+              {currentGuidePage === 3 && (
+                <div className="guide-page">
+                  <h2 className="guide-page-title">🎮 Controls & Keybinds</h2>
+                  <div className="guide-page-text">
+                    <p><strong>Exploration Controls:</strong></p>
+                    <ul>
+                      <li><strong>← →</strong> or <strong>A/D</strong> - Move Left/Right</li>
+                      <li><strong>SPACE</strong> - Jump</li>
+                      <li><strong>E</strong> - Interact with NPCs, Shop, or Guide</li>
+                      <li><strong>S</strong> - Open Shop (anywhere)</li>
+                      <li><strong>TAB</strong> - Open Inventory</li>
+                    </ul>
+                    
+                    <p><strong>Battle Controls:</strong></p>
+                    <ul>
+                      <li><strong>A</strong> - Attack Dice</li>
+                      <li><strong>H</strong> - Heal Dice</li>
+                      <li><strong>I</strong> - Items Menu</li>
+                      <li><strong>C</strong> - Chaos Dice</li>
+                      <li><strong>R</strong> - Random Event</li>
+                      <li><strong>F</strong> - Forfeit Battle</li>
+                    </ul>
+                    
+                    <p><strong>General Tips:</strong></p>
+                    <ul>
+                      <li>Save your chaos dice for critical moments</li>
+                      <li>Use items strategically against bosses</li>
+                      <li>Heal early to avoid getting knocked out</li>
+                      <li>Explore each floor thoroughly before ascending</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+              
+              {/* Page 4: Video Trailer */}
+              {currentGuidePage === 4 && (
+                <div className="guide-page">
+                  <h2 className="guide-page-title">🎬 Game Trailer</h2>
+                  <div className="guide-video-container">
+                    <video 
+                      controls 
+                      className="guide-video"
+                      src="/trailer.mp4"
+                      poster="/logo.png"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    <p className="guide-video-caption">
+                      Watch the Tower Ascend trailer to see the adventure that awaits!
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Page Navigation */}
+            <div className="guide-page-navigation">
+              <button 
+                className="guide-nav-btn" 
+                onClick={() => setCurrentGuidePage(Math.max(1, currentGuidePage - 1))}
+                disabled={currentGuidePage === 1}
+              >
+                ← Previous
+              </button>
+              <div className="guide-page-indicator">
+                Page {currentGuidePage} of 4
+              </div>
+              <button 
+                className="guide-nav-btn" 
+                onClick={() => setCurrentGuidePage(Math.min(4, currentGuidePage + 1))}
+                disabled={currentGuidePage === 4}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Battle Transition Overlay */}
       {battleTransition && (
-        <div className={`battle-transition-overlay ${battleTransition ? 'active' : ''}`}>
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            fontSize: '48px',
-            color: '#ff8c3c',
-            fontFamily: 'Audiowide, sans-serif',
-            textShadow: '3px 3px 0px #000, 0 0 25px rgba(255, 140, 60, 1)',
-            animation: 'fadeIn 1s ease-in-out',
-            zIndex: 20001
-          }}>
-            BATTLE START
-          </div>
+        <div className={`battle-transition-overlay ${transitionType}`}>
+          {/* Horizontal Strips Effect */}
+          {transitionType === 'horizontal-strips' && (
+            <div className="transition-strips horizontal">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="transition-strip" />
+              ))}
+            </div>
+          )}
+          
+          {/* Vertical Strips Effect */}
+          {transitionType === 'vertical-strips' && (
+            <div className="transition-strips vertical">
+              {Array.from({ length: 16 }).map((_, i) => (
+                <div key={i} className="transition-strip" />
+              ))}
+            </div>
+          )}
+          
+          {/* Battle Start Text - Show for most transitions */}
+          {(transitionType === 'zoom-in' || transitionType === 'blink') && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              fontSize: '48px',
+              color: transitionType === 'blink' ? '#000' : '#ff8c3c',
+              fontFamily: 'Audiowide, sans-serif',
+              textShadow: transitionType === 'blink' 
+                ? '3px 3px 0px #fff, 0 0 25px rgba(255, 255, 255, 0.8)'
+                : '3px 3px 0px #000, 0 0 25px rgba(255, 140, 60, 1)',
+              animation: 'fadeIn 1s ease-in-out',
+              zIndex: 20001,
+              mixBlendMode: transitionType === 'blink' ? 'difference' : 'normal'
+            }}>
+              BATTLE START
+            </div>
+          )}
         </div>
       )}
     </div>
